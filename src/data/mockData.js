@@ -21,25 +21,25 @@ export const CURRENT_USER = {
 // Giả lập lịch làm việc dày đặc hơn trong tuần
 export const INITIAL_MY_SHIFTS = [
   {
-    date: "25/11", day: "T3",
+    date: "25", day: "T3",
     shifts: [
       { id: 101, time: "08:00 – 16:00", location: "CHÚ BI", role: "PHA CHẾ", transferFrom: null }
     ]
   },
   {
-    date: "26/11", day: "T4",
+    date: "26", day: "T4",
     shifts: [
       { id: 102, time: "08:00 – 12:00", location: "CHÚ BI", role: "PHỤC VỤ", transferFrom: null },
     ]
   },
   {
-    date: "27/11", day: "T5",
+    date: "27", day: "T5",
     shifts: [
       { id: 103, time: "18:00 – 22:00", location: "CHÚ BI", role: "PHA CHẾ", transferFrom: null }
     ]
   },
   {
-    date: "29/11", day: "T7",
+    date: "29", day: "T7",
     shifts: [
       { id: 104, time: "14:00 – 22:00", location: "CHÚ BI", role: "PHỤC VỤ", transferFrom: "Lê Văn Hùng" } // Đã nhận từ người khác
     ]
@@ -51,38 +51,38 @@ export const INITIAL_MY_SHIFTS = [
 export const INITIAL_MARKET_SHIFTS = [
   // CASE 1: HỢP LỆ (Nhận được)
   { 
-    id: 'm1', role: "Phục vụ", date: "26/11", day: "T4", time: "18:00 - 22:00", 
+    id: 'm1', role: "Phục vụ", date: "26", day: "T4", time: "18:00 - 22:00", 
     owner: "Trần Thị B", location: "CHÚ BI", reason: "Bận học đột xuất"
   },
   
   // CASE 2: TRÙNG GIỜ (Ngày 27 T5 user đã có ca 18:00 - 22:00)
   // Ca này 19:00 - 23:00 -> Bị trùng đoạn 19:00-22:00
   {
-    id: 'm2', role: "Pha chế", date: "27/11", day: "T5", time: "19:00 - 23:00",
+    id: 'm2', role: "Pha chế", date: "27", day: "T5", time: "19:00 - 23:00",
     owner: "Nguyễn Văn A", location: "CHÚ BI", reason: "Ốm đau"
   },
 
   // CASE 3: SAI VAI TRÒ (User chỉ là Phục vụ/Pha chế)
   {
-    id: 'm3', role: "Thu ngân", date: "28/11", day: "T6", time: "08:00 - 12:00",
+    id: 'm3', role: "Thu ngân", date: "28", day: "T6", time: "08:00 - 12:00",
     owner: "Lê Thị C", location: "CHÚ BI", reason: "Về quê ăn cưới"
   },
 
   // CASE 4: HỢP LỆ (Ngày trống)
   {
-    id: 'm4', role: "Phục vụ", date: "28/11", day: "T6", time: "08:00 - 16:00", 
+    id: 'm4', role: "Phục vụ", date: "28", day: "T6", time: "08:00 - 16:00", 
     owner: "Phạm D", location: "CHÚ BI", reason: "Đổi ca"
   },
 
   // CASE 5: HỢP LỆ (Khác giờ ngày 26: User làm sáng, ca này tối muộn)
   {
-    id: 'm5', role: "Pha chế", date: "26/11", day: "T4", time: "22:00 - 02:00",
+    id: 'm5', role: "Pha chế", date: "26", day: "T4", time: "22:00 - 02:00",
     owner: "Vũ K", location: "CHÚ BI", reason: "Mệt mỏi"
   },
 
   // CASE 6: SAI VAI TRÒ (Bếp)
   {
-    id: 'm6', role: "Bếp", date: "30/11", day: "CN", time: "10:00 - 14:00",
+    id: 'm6', role: "Bếp", date: "30", day: "CN", time: "10:00 - 14:00",
     owner: "Đầu bếp T", location: "CHÚ BI", reason: "Con ốm"
   }
 ];
