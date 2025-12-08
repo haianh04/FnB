@@ -1,329 +1,321 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronDown, Info, ChevronLeft, ChevronRight, CheckCircle, XCircle, Loader, Lock } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, XCircle, Loader, Lock, Clock, ChevronRight as IconArrow, Edit3, Save } from 'lucide-react';
 
-// Helper để xử lý ngày tháng
+// --- HELPERS ---
 const getStartOfWeek = (date) => {
     const d = new Date(date);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Thứ 2 là đầu tuần
-    return new Date(d.setDate(diff));
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+    return monday;
 };
 
-const formatDateKey = (date) => { // YYYY-MM-DD
-    return date.toISOString().split('T')[0];
+const formatDateKey = (date) => date.toISOString().split('T')[0];
+
+const addDays = (date, days) => {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
 };
 
-const formatDisplayDate = (date) => { // DD
-    return String(date.getDate()).padStart(2, '0');
+// CẬP NHẬT: Format hiển thị tuần có năm "24/11, 2025"
+const formatWeekRange = (startDate, endDate) => {
+    const format = (date) => `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}, ${date.getFullYear()}`;
+    return `${format(startDate)} — ${format(endDate)}`;
+};
+
+const formatDayDisplay = (date) => {
+    return `${String(date.getDate()).padStart(2, '0')}`; 
 };
 
 // Mock Data
-const MOCK_SAVED_DATA = {
-    '2025-11-26': { 
-        type: 'temporary', 
-        isFullDay: false, 
-        busyFrom: '18:00', 
-        busyTo: '21:00', 
-        reason: 'Đi học', 
-        note: 'Lớp tối', 
-        status: 'approved' 
-    },
-    '2025-11-27': { 
-        type: 'fixed', 
-        isFullDay: true, 
-        status: 'pending'
+const MOCK_DB = {
+    '2025-11-24': { 
+        id: 'week_2025_48',
+        status: 'approved', 
+        days: {
+            '2025-11-24': { isFullDay: true }, 
+            '2025-11-25': { isFullDay: false, busyFrom: '18:00', busyTo: '22:00', reason: 'Đi học' },
+            '2025-11-26': { isFullDay: true },
+            '2025-11-27': { isFullDay: true },
+            '2025-11-28': { isFullDay: true },
+            '2025-11-29': { isFullDay: true },
+            '2025-11-30': { isFullDay: true },
+        }
     }
 };
 
 export default function AvailabilityScreen({ onBack }) {
-  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date(2025, 10, 26)));
-  const [selectedDate, setSelectedDate] = useState(new Date(2025, 10, 26)); 
-  const [availabilityData, setAvailabilityData] = useState(MOCK_SAVED_DATA);
-
-  // Form State
-  const [formState, setFormState] = useState({
-      type: 'temporary',
-      isFullDay: true,
-      busyFrom: '08:00',
-      busyTo: '17:00',
-      reason: 'Bận việc cá nhân',
-      note: '',
-      status: null 
-  });
+  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date(2025, 10, 24)));
+  const [weekData, setWeekData] = useState({ status: 'new', days: {} });
+  const [editingDay, setEditingDay] = useState(null); 
 
   useEffect(() => {
-      const key = formatDateKey(selectedDate);
-      const savedData = availabilityData[key];
+      const key = formatDateKey(currentWeekStart);
+      const savedWeek = MOCK_DB[key];
 
-      if (savedData) {
-          setFormState({ ...savedData });
+      if (savedWeek) {
+          setWeekData(savedWeek);
       } else {
-          setFormState({
-              type: 'temporary',
-              isFullDay: true,
-              busyFrom: '08:00',
-              busyTo: '17:00',
-              reason: 'Bận việc cá nhân',
-              note: '',
-              status: null
-          });
+          const defaultDays = {};
+          for (let i = 0; i < 7; i++) {
+              const d = addDays(currentWeekStart, i);
+              defaultDays[formatDateKey(d)] = { isFullDay: true, reason: 'Bận việc cá nhân' };
+          }
+          setWeekData({ status: 'new', days: defaultDays });
       }
-  }, [selectedDate, availabilityData]);
+  }, [currentWeekStart]);
 
-  // Handlers
-  const handlePrevWeek = () => {
-      const newStart = new Date(currentWeekStart);
-      newStart.setDate(newStart.getDate() - 7);
-      setCurrentWeekStart(newStart);
+  // --- HANDLERS ---
+  const handlePrevWeek = () => setCurrentWeekStart(addDays(currentWeekStart, -7));
+  const handleNextWeek = () => setCurrentWeekStart(addDays(currentWeekStart, 7));
+
+  const handleOpenEdit = (dateStr, dayLabel) => {
+      if (weekData.status === 'approved') return;
+      const currentConfig = weekData.days[dateStr] || { isFullDay: true, reason: 'Bận việc cá nhân' };
+      setEditingDay({ dateStr, dayLabel, ...currentConfig });
   };
 
-  const handleNextWeek = () => {
-      const newStart = new Date(currentWeekStart);
-      newStart.setDate(newStart.getDate() + 7);
-      setCurrentWeekStart(newStart);
+  const handleSaveDay = () => {
+      // FIX LỖI: Nếu người dùng không sửa giờ, lấy giá trị mặc định '08:00' và '17:00'
+      // thay vì lưu undefined/null khiến màn hình ngoài hiển thị lỗi.
+      const busyFromVal = editingDay.busyFrom || '08:00';
+      const busyToVal = editingDay.busyTo || '17:00';
+      const reasonVal = editingDay.reason || 'Bận việc cá nhân';
+
+      setWeekData(prev => ({
+          ...prev,
+          days: {
+              ...prev.days,
+              [editingDay.dateStr]: {
+                  isFullDay: editingDay.isFullDay,
+                  busyFrom: busyFromVal,
+                  busyTo: busyToVal,
+                  reason: reasonVal,
+                  note: editingDay.note
+              }
+          }
+      }));
+      setEditingDay(null);
   };
 
-  const handleSave = () => {
-      const key = formatDateKey(selectedDate);
-      const newData = { ...formState, status: 'pending' };
-      setAvailabilityData(prev => ({ ...prev, [key]: newData }));
-      setFormState(newData);
-      // alert(`Đã lưu đăng ký cho ngày ${formatDisplayDate(selectedDate)}!`); // Bỏ alert cho đỡ phiền
+  const handleSubmitWeek = () => {
+      setWeekData(prev => ({ ...prev, status: 'pending' }));
   };
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(currentWeekStart);
-      d.setDate(d.getDate() + i);
-      const key = formatDateKey(d);
-      const data = availabilityData[key];
-      
-      let dotColor = 'bg-transparent';
-      if (data) {
-          dotColor = data.isFullDay ? 'bg-green-500' : 'bg-red-500';
-      } else {
-          dotColor = 'bg-orange-300'; 
+  const currentWeekEnd = addDays(currentWeekStart, 6);
+  const isLocked = weekData.status === 'approved'; 
+  const isPending = weekData.status === 'pending'; 
+
+  const getStatusBadge = () => {
+      if (weekData.status === 'new') return null;
+      switch(weekData.status) {
+          case 'approved': return <div className="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200"><CheckCircle size={12}/> Đã duyệt</div>;
+          case 'pending': return <div className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold border border-yellow-200"><Loader size={12}/> Chờ duyệt</div>;
+          case 'rejected': return <div className="flex items-center gap-1 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200"><XCircle size={12}/> Từ chối</div>;
+          default: return null;
       }
-
-      return {
-          dateObj: d,
-          dayLabel: i === 6 ? 'CN' : `T${i + 2}`,
-          dateNum: formatDisplayDate(d),
-          dotColor
-      };
-  });
-
-  const isLocked = formState.status === 'approved';
-
-  const renderStatusBadge = () => {
-      if (!formState.status) return null;
-      const styles = {
-          pending: { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', icon: Loader, label: 'Chờ duyệt' },
-          approved: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', icon: CheckCircle, label: 'Đã duyệt' },
-          rejected: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', icon: XCircle, label: 'Từ chối' },
-      };
-      const style = styles[formState.status];
-      const Icon = style.icon;
-      return (
-          <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full border ${style.bg} ${style.border} ${style.text} text-[10px] font-bold animate-in fade-in`}>
-              <Icon size={10} /> {style.label}
-          </div>
-      );
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#F2F2F7] font-sans relative overflow-hidden">
+    <div className="flex flex-col h-full bg-[#F5F5F5] font-sans relative overflow-hidden">
       
       {/* 1. HEADER */}
       <div className="bg-white pt-12 pb-3 px-4 shadow-sm relative z-20 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-            <button onClick={onBack} className="w-8 h-8 flex items-center justify-center -ml-1 hover:bg-gray-50 rounded-full transition-colors">
-                <ArrowLeft size={20} className="text-gray-900"/>
+            <button onClick={onBack} className="w-9 h-9 flex items-center justify-center -ml-1 hover:bg-gray-50 rounded-full transition-colors">
+                <ArrowLeft size={22} className="text-gray-800"/>
             </button>
-            <h1 className="text-[16px] font-bold text-gray-900">Đăng ký lịch rảnh</h1>
+            <h1 className="text-[17px] font-bold text-gray-900">Lịch rảnh theo tuần</h1>
         </div>
-        {!isLocked && (
-            <button onClick={handleSave} className="text-[15px] font-semibold text-[#E08C27] active:opacity-60 px-2">
-                Lưu
-            </button>
-        )}
+        {getStatusBadge()}
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-10">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
         
-        {/* 2. WEEK NAVIGATOR (Đã sửa size để không tràn) */}
-        <div className="bg-white pb-3 pt-2 border-b border-gray-200 shadow-sm mb-5">
-            <div className="flex justify-center mb-2 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">
-                Tháng {currentWeekStart.getMonth() + 1}, {currentWeekStart.getFullYear()}
-            </div>
-
-            <div className="flex items-center px-1">
-                {/* Nút Trái */}
-                <button onClick={handlePrevWeek} className="p-1 text-gray-400 hover:text-gray-600 w-8 flex justify-center">
+        {/* 2. WEEK FILTER (Đã thêm năm) */}
+        <div className="bg-white p-4 mb-4 border-b border-gray-200 sticky top-0 z-10 shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
+            <div className="flex items-center justify-between bg-gray-50 rounded-xl p-1 border border-gray-100">
+                <button onClick={handlePrevWeek} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:bg-white hover:shadow-sm rounded-lg transition-all active:scale-95">
                     <ChevronLeft size={20}/>
                 </button>
-
-                {/* Dãy ngày (Dãn đều) */}
-                <div className="flex-1 flex justify-between px-1">
-                    {weekDays.map((item, index) => {
-                        const isSelected = formatDateKey(item.dateObj) === formatDateKey(selectedDate);
-                        return (
-                            <button 
-                                key={index}
-                                onClick={() => setSelectedDate(item.dateObj)}
-                                className="flex flex-col items-center gap-1 group w-9" // Cố định width nhỏ
-                            >
-                                <span className={`text-[10px] font-medium ${isSelected ? 'text-gray-900 font-bold' : 'text-gray-400'}`}>
-                                    {item.dayLabel}
-                                </span>
-                                <div className={`w-8 h-8 flex items-center justify-center rounded-full text-[13px] font-semibold transition-all relative
-                                    ${isSelected 
-                                        ? 'bg-[#191919] text-white shadow-md' 
-                                        : 'bg-transparent text-gray-900 group-hover:bg-gray-50'}
-                                `}>
-                                    {item.dateNum}
-                                    {/* DOT */}
-                                    <div className={`absolute -bottom-1 w-1 h-1 rounded-full ${item.dotColor}`}></div>
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Nút Phải */}
-                <button onClick={handleNextWeek} className="p-1 text-gray-400 hover:text-gray-600 w-8 flex justify-center">
+                
+                <span className="text-[13px] font-bold text-gray-800 tracking-tight">
+                    {formatWeekRange(currentWeekStart, currentWeekEnd)}
+                </span>
+                
+                <button onClick={handleNextWeek} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:bg-white hover:shadow-sm rounded-lg transition-all active:scale-95">
                     <ChevronRight size={20}/>
                 </button>
             </div>
-        </div>
-
-        {/* 3. TYPE SELECTION */}
-        <div className="px-4 mb-5">
-            <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                    <span className="text-[13px] font-semibold text-gray-500 uppercase tracking-wider">Cấu hình</span>
-                    <Info size={12} className="text-gray-400"/>
-                </div>
-                {renderStatusBadge()}
-            </div>
             
-            <div className="bg-white p-1 rounded-[10px] flex shadow-sm border border-gray-100">
-                <button 
-                    disabled={isLocked}
-                    onClick={() => setFormState({...formState, type: 'temporary'})}
-                    className={`flex-1 py-1.5 text-[12px] font-semibold rounded-[7px] transition-all
-                        ${formState.type === 'temporary' 
-                            ? 'bg-[#E08C27] text-white shadow-sm' 
-                            : 'bg-transparent text-gray-500 hover:bg-gray-50'}
-                        ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}
-                    `}
-                >
-                    Tạm thời
-                </button>
-                <button 
-                    disabled={isLocked}
-                    onClick={() => setFormState({...formState, type: 'fixed'})}
-                    className={`flex-1 py-1.5 text-[12px] font-semibold rounded-[7px] transition-all
-                        ${formState.type === 'fixed' 
-                            ? 'bg-[#E08C27] text-white shadow-sm' 
-                            : 'bg-transparent text-gray-500 hover:bg-gray-50'}
-                        ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}
-                    `}
-                >
-                    Cố định
-                </button>
-            </div>
+            {isLocked && (
+                <div className="mt-2 flex items-center justify-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 py-1.5 rounded-lg border border-green-100">
+                    <Lock size={12}/> Tuần này đã được duyệt, không thể thay đổi.
+                </div>
+            )}
         </div>
 
-        {/* 4. FORM SECTION */}
-        <div className="px-4 space-y-4 relative">
+        {/* 3. DANH SÁCH NGÀY */}
+        <div className="px-4 space-y-3">
+            {[0, 1, 2, 3, 4, 5, 6].map((offset) => {
+                const date = addDays(currentWeekStart, offset);
+                const dateKey = formatDateKey(date);
+                const dayConfig = weekData.days[dateKey] || { isFullDay: true }; 
+                
+                const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+                const dayIndex = date.getDay();
+                const label = dayLabels[dayIndex];
+                const isToday = formatDateKey(new Date()) === dateKey;
 
-            {/* Block 1: Full Day Toggle */}
-            <div className="bg-white rounded-[12px] overflow-hidden shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between p-3.5 border-b border-gray-100">
-                    <div>
-                        <span className="text-[14px] text-gray-900 font-medium block">Rảnh cả ngày</span>
-                        <span className="text-[11px] text-gray-400">Gạt tắt nếu bạn có giờ bận</span>
-                    </div>
-                    
-                    <button 
-                        disabled={isLocked}
-                        onClick={() => setFormState({...formState, isFullDay: !formState.isFullDay})}
-                        className={`w-[44px] h-[26px] rounded-full p-[2px] transition-colors duration-300 ease-in-out relative
-                            ${formState.isFullDay ? 'bg-[#34C759]' : 'bg-[#E9E9EA]'}
+                const borderClass = dayConfig.isFullDay 
+                    ? 'border-l-4 border-l-green-500' 
+                    : 'border-l-4 border-l-red-500';
+
+                return (
+                    <div 
+                        key={dateKey}
+                        onClick={() => handleOpenEdit(dateKey, `${label}, ${date.getDate()}/${date.getMonth() + 1}`)}
+                        className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 relative overflow-hidden transition-all
+                            ${isLocked ? 'opacity-70 cursor-default' : 'cursor-pointer active:scale-[0.99] hover:border-orange-200'}
+                            ${borderClass}
                         `}
+                    >   
+                        {/* Cột Trái: Ngày */}
+                        <div className="flex flex-col items-center min-w-[45px]">
+                            <span className={`text-[11px] font-bold uppercase ${isToday ? 'text-[#E08C27]' : 'text-gray-400'}`}>
+                                {label.split(' ')[0] === 'Thứ' ? label.replace('Thứ ', 'T') : label}
+                            </span>
+                            <span className={`text-[17px] font-bold ${isToday ? 'text-[#E08C27]' : 'text-gray-800'}`}>
+                                {formatDayDisplay(date)}
+                            </span>
+                        </div>
+
+                        {/* Cột Giữa: Nội dung */}
+                        <div className="flex-1 border-l border-gray-100 pl-4 py-1">
+                            {dayConfig.isFullDay ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span className="text-sm font-bold text-gray-700">Rảnh cả ngày</span>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                        <span className="text-sm font-bold text-gray-800">Có giờ bận</span>
+                                    </div>
+                                    
+                                    {/* HIỂN THỊ GIỜ BẬN */}
+                                    <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 w-fit px-2.5 py-1 rounded-md border border-gray-100">
+                                        <Clock size={12} className="text-gray-400"/>
+                                        <span className="font-mono font-bold">
+                                            {/* Logic Fix: Luôn hiển thị giờ kể cả khi dùng mặc định */}
+                                            {dayConfig.busyFrom || '08:00'} - {dayConfig.busyTo || '17:00'}
+                                        </span>
+                                    </div>
+                                    
+                                    {dayConfig.reason && (
+                                        <p className="text-[11px] text-gray-400 mt-1 italic line-clamp-1">Lý do: {dayConfig.reason}</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Cột Phải: Icon */}
+                        {!isLocked ? <IconArrow size={18} className="text-gray-300"/> : <Lock size={16} className="text-gray-300"/>}
+                    </div>
+                );
+            })}
+        </div>
+      </div>
+
+      {/* 4. FOOTER */}
+      {!isLocked && (
+          <div className="absolute bottom-0 w-full bg-white border-t border-gray-100 p-4 pb-8 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+              <button 
+                onClick={handleSubmitWeek}
+                className="w-full py-3.5 bg-[#E08C27] text-white font-bold rounded-xl shadow-lg shadow-orange-200 active:scale-95 transition-transform flex items-center justify-center gap-2"
+              >
+                  <Save size={18}/> 
+                  {isPending ? 'Cập nhật lại đăng ký' : 'Gửi đăng ký tuần này'}
+              </button>
+          </div>
+      )}
+
+      {/* 5. MODAL */}
+      {editingDay && (
+        <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px]" onClick={() => setEditingDay(null)}>
+            <div className="bg-white w-full rounded-t-[24px] p-5 animate-in slide-in-from-bottom duration-300" onClick={e => e.stopPropagation()}>
+                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+                
+                <h3 className="text-lg font-bold text-gray-900 mb-1">{editingDay.dayLabel}</h3>
+                <p className="text-sm text-gray-500 mb-6">Cập nhật thời gian rảnh của bạn</p>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl mb-4 border border-gray-100">
+                    <div>
+                        <span className="text-sm font-bold text-gray-900 block">Rảnh cả ngày</span>
+                        <span className="text-xs text-gray-500">Tắt nếu bạn có giờ bận</span>
+                    </div>
+                    <button 
+                        onClick={() => setEditingDay({...editingDay, isFullDay: !editingDay.isFullDay})}
+                        className={`w-[48px] h-[28px] rounded-full p-[2px] transition-colors duration-300 relative ${editingDay.isFullDay ? 'bg-[#34C759]' : 'bg-gray-300'}`}
                     >
-                        <div className={`w-[22px] h-[22px] bg-white rounded-full shadow-md transform transition-transform duration-300 ease-in-out
-                            ${formState.isFullDay ? 'translate-x-[18px]' : 'translate-x-0'}
-                        `}></div>
+                        <div className={`w-[24px] h-[24px] bg-white rounded-full shadow-sm transition-transform duration-300 ${editingDay.isFullDay ? 'translate-x-[20px]' : 'translate-x-0'}`}></div>
                     </button>
                 </div>
 
-                {!formState.isFullDay && (
-                    <div className="animate-in slide-in-from-top-2 duration-300 bg-gray-50/50">
-                        <div className="flex items-center justify-between p-3 border-b border-gray-100">
-                            <span className="text-[14px] text-gray-700 font-medium">Bận từ</span>
-                            <div className="bg-white border border-gray-200 px-2 py-1 rounded-[6px]">
+                {!editingDay.isFullDay && (
+                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Bận từ</label>
                                 <input 
                                     type="time" 
-                                    disabled={isLocked}
-                                    value={formState.busyFrom}
-                                    onChange={(e) => setFormState({...formState, busyFrom: e.target.value})}
-                                    className="bg-transparent text-[14px] font-bold text-gray-900 outline-none w-[80px] text-center"
+                                    // Giá trị mặc định khi mở modal là 08:00 nếu chưa set
+                                    value={editingDay.busyFrom || '08:00'}
+                                    onChange={(e) => setEditingDay({...editingDay, busyFrom: e.target.value})}
+                                    className="w-full p-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-orange-500 text-center"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Đến</label>
+                                <input 
+                                    type="time" 
+                                    // Giá trị mặc định khi mở modal là 17:00 nếu chưa set
+                                    value={editingDay.busyTo || '17:00'}
+                                    onChange={(e) => setEditingDay({...editingDay, busyTo: e.target.value})}
+                                    className="w-full p-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-orange-500 text-center"
                                 />
                             </div>
                         </div>
-                        <div className="flex items-center justify-between p-3">
-                            <span className="text-[14px] text-gray-700 font-medium">Bận đến</span>
-                            <div className="bg-white border border-gray-200 px-2 py-1 rounded-[6px]">
-                                <input 
-                                    type="time" 
-                                    disabled={isLocked}
-                                    value={formState.busyTo}
-                                    onChange={(e) => setFormState({...formState, busyTo: e.target.value})}
-                                    className="bg-transparent text-[14px] font-bold text-gray-900 outline-none w-[80px] text-center"
-                                />
-                            </div>
+
+                        <div>
+                            <label className="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Lý do</label>
+                            <select 
+                                value={editingDay.reason || 'Bận việc cá nhân'}
+                                onChange={(e) => setEditingDay({...editingDay, reason: e.target.value})}
+                                className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none text-sm font-medium"
+                            >
+                                <option>Bận việc cá nhân</option>
+                                <option>Đi học</option>
+                                <option>Về quê</option>
+                                <option>Khác</option>
+                            </select>
                         </div>
                     </div>
                 )}
-            </div>
 
-            {/* Block 2: Lý do & Ghi chú */}
-            <div className="bg-white rounded-[12px] overflow-hidden shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between p-3.5 border-b border-gray-100">
-                    <span className="text-[14px] text-gray-900 font-medium">Lý do bận</span>
-                    <div className="relative">
-                        <select 
-                            disabled={isLocked}
-                            value={formState.reason}
-                            onChange={(e) => setFormState({...formState, reason: e.target.value})}
-                            className="appearance-none bg-transparent text-[14px] text-[#E08C27] font-medium pr-5 text-right outline-none cursor-pointer disabled:text-gray-400"
-                            dir="rtl"
-                        >
-                            <option>Bận việc cá nhân</option>
-                            <option>Đi học</option>
-                            <option>Về quê</option>
-                            <option>Sức khỏe</option>
-                            <option>Khác</option>
-                        </select>
-                        <ChevronDown size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"/>
-                    </div>
-                </div>
-                
-                <div className="p-3.5">
-                    <span className="text-[13px] text-gray-500 block mb-2 font-medium">Ghi chú thêm</span>
-                    <textarea 
-                        disabled={isLocked}
-                        value={formState.note}
-                        onChange={(e) => setFormState({...formState, note: e.target.value})}
-                        placeholder="Nhập chi tiết..."
-                        className="w-full h-[60px] p-2 rounded-[8px] bg-gray-50 border border-gray-100 text-[14px] text-gray-800 placeholder-gray-400 outline-none focus:border-[#E08C27] resize-none transition-all disabled:bg-gray-100 disabled:text-gray-400"
-                    ></textarea>
-                </div>
+                <button 
+                    onClick={handleSaveDay}
+                    className="w-full py-3.5 bg-[#191919] text-white font-bold rounded-xl mt-6 active:scale-95 transition-transform"
+                >
+                    Xác nhận
+                </button>
             </div>
-
         </div>
-      </div>
+      )}
+
     </div>
   );
 }
