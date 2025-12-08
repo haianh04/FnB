@@ -240,7 +240,7 @@ export default function AttendanceHistoryScreen({ onBack }) {
                                 )}
                                 
                                 <span className={`text-xs font-bold ${item.status === 'approved' ? 'text-gray-800' : 'text-gray-400 line-through'}`}>
-                                    {displayDuration} hrs
+                                    {displayDuration} giờ
                                 </span>
                             </div>
                         </div>
