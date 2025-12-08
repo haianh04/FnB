@@ -236,14 +236,6 @@ export default function AvailabilityScreen({ onBack }) {
 
         {/* 4. FORM SECTION */}
         <div className="px-4 space-y-4 relative">
-            {/* Overlay khóa */}
-            {isLocked && (
-                <div className="absolute inset-0 bg-white/60 z-10 rounded-[12px] flex items-center justify-center backdrop-blur-[1px]">
-                    <div className="bg-white/95 px-3 py-1.5 rounded-full shadow-sm border border-gray-100 flex items-center gap-1.5 text-gray-500 text-xs font-medium">
-                        <Lock size={12}/> Đã duyệt
-                    </div>
-                </div>
-            )}
 
             {/* Block 1: Full Day Toggle */}
             <div className="bg-white rounded-[12px] overflow-hidden shadow-sm border border-gray-100">
