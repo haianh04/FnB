@@ -59,7 +59,7 @@ export default function MoreMenu({ onNavigate, onLogout, user }) {
         <button onClick={onLogout} className="w-full bg-white p-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-all hover:bg-gray-50 hover:border-gray-200 group mt-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center border border-red-100 group-hover:bg-white transition-colors"><LogOut size={18} className="text-red-500" /></div>
-              <div className="text-left"><p className="font-bold text-gray-900 text-base">Đăng xuất</p><p className="text-xs text-gray-600 mt-0">Thoát khỏi tài khoản</p></div>
+              <div className="text-left"><p className="font-bold text-gray-900 text-base">Đăng xuất</p><p className="text-xs text-gray-400 mt-0">Thoát khỏi tài khoản</p></div>
             </div>
         </button>
       </div>

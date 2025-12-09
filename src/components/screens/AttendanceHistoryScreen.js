@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Calendar, Clock, Trash2, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Trash2, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, Loader } from 'lucide-react';
 import { getRoleBadgeStyle } from '../../utils/helpers';
+
 // --- HELPERS ---
 
 // Tính giờ làm
@@ -55,8 +56,19 @@ const MOCK_HISTORY = [
     exceptions: null
   },
   { 
+    id: 99, 
+    dateObj: new Date(2025, 10, 27), // 27/11 (Thứ 5) - TEST PENDING
+    scheduledTime: "18:00 - 22:00", 
+    role: "Phục vụ",
+    location: "CHÚ BI",
+    inTime: "18:00",
+    outTime: "22:00",
+    status: "pending", // <--- TRẠNG THÁI MỚI
+    exceptions: null
+  },
+  { 
     id: 3, 
-    dateObj: new Date(2025, 10, 23), // 23/11 (Chủ nhật tuần trước) -> Sẽ bị lọc nếu chọn tuần 24-30
+    dateObj: new Date(2025, 10, 23), // 23/11
     scheduledTime: "18:00 - 22:00", 
     role: "Phục vụ",
     location: "CHÚ BI",
@@ -66,7 +78,7 @@ const MOCK_HISTORY = [
   },
   { 
     id: 4, 
-    dateObj: new Date(2025, 11, 1), // 01/12 (Tuần sau) -> Sẽ bị lọc
+    dateObj: new Date(2025, 11, 1), // 01/12
     scheduledTime: "08:00 - 16:00", 
     role: "Phục vụ",
     location: "CHÚ BI",
@@ -102,7 +114,7 @@ export default function AttendanceHistoryScreen({ onBack }) {
   const filteredHistory = useMemo(() => {
       return MOCK_HISTORY.filter(item => {
           return item.dateObj >= currentWeekStart && item.dateObj <= currentWeekEnd;
-      }).sort((a, b) => b.dateObj - a.dateObj); // Sắp xếp mới nhất lên đầu
+      }).sort((a, b) => b.dateObj - a.dateObj);
   }, [currentWeekStart, currentWeekEnd]);
 
   // --- HELPER FORMAT ---
@@ -117,7 +129,8 @@ export default function AttendanceHistoryScreen({ onBack }) {
   // --- CALCULATE TOTAL ---
   const totalHours = useMemo(() => {
       const total = filteredHistory.reduce((acc, item) => {
-          if (item.status === 'approved') {
+          // Tính tổng cho cả Approved và Pending
+          if (item.status === 'approved' || item.status === 'pending') {
               return acc + getDurationNumber(item.inTime, item.outTime);
           }
           return acc;
@@ -139,7 +152,7 @@ export default function AttendanceHistoryScreen({ onBack }) {
             </div>
         </div>
 
-        {/* 2. TUẦN FILTER (MỚI THÊM) */}
+        {/* 2. TUẦN FILTER */}
         <div className="flex items-center justify-between mb-4">
             <button onClick={handlePrevWeek} className="w-[36px] h-[36px] flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 active:scale-95 transition-all shadow-sm">
                 <ChevronLeft size={20}/>
@@ -177,10 +190,15 @@ export default function AttendanceHistoryScreen({ onBack }) {
         {filteredHistory.length > 0 ? (
             filteredHistory.map((item) => {
                 const { dayLabel, dateStr } = formatDateBox(item.dateObj);
-                const hoursVal = item.status === 'approved' 
+                
+                // Tính giờ hiển thị (cho cả Approved và Pending)
+                const hoursVal = (item.status === 'approved' || item.status === 'pending')
                     ? getDurationNumber(item.inTime, item.outTime) 
                     : 0;
                 const displayDuration = hoursVal.toFixed(2);
+                
+                // Logic style text: Pending vẫn hiện màu đậm như Approved
+                const isApprovedOrPending = item.status === 'approved' || item.status === 'pending';
 
                 return (
                     <div key={item.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex animate-in slide-in-from-bottom-2 fade-in duration-300">
@@ -197,7 +215,6 @@ export default function AttendanceHistoryScreen({ onBack }) {
                                 <div className="flex items-center flex-wrap gap-2 text-[11px] text-gray-500">
                                     <Calendar size={12}/>
                                     <span>{item.scheduledTime}</span>
-                                    {/* Thêm khung bo tròn ở ngoài vai trò theo màu theo role, chữ theo màu của role */}
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${getRoleBadgeStyle(item.role)}`}>{item.role}</span>
                                     <span>{item.location}</span>
                                 </div>
@@ -228,17 +245,23 @@ export default function AttendanceHistoryScreen({ onBack }) {
 
                             {/* Dòng 4: Trạng thái & Tổng giờ */}
                             <div className="flex items-center justify-end gap-3 mt-2 border-t border-gray-50 pt-2">
+                                {/* LOGIC BADGE TRẠNG THÁI */}
                                 {item.status === 'approved' ? (
                                     <span className="bg-[#E0F2F1] text-[#00695C] px-3 py-1 rounded-full text-[10px] font-bold border border-[#B2DFDB] flex items-center gap-1">
                                         <CheckCircle size={10}/> Quản lý đã duyệt
                                     </span>
-                                ) : (
+                                ) : item.status === 'not approved' ? (
                                     <span className="bg-red-50 text-red-600 px-3 py-1 rounded-full text-[10px] font-bold border border-red-100 flex items-center gap-1">
                                         <XCircle size={10}/> Không được duyệt
                                     </span>
+                                ) : (
+                                    // Trường hợp Pending
+                                    <span className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full text-[10px] font-bold border border-yellow-200 flex items-center gap-1">
+                                        <Loader size={10} className="animate-spin"/> Đang chờ duyệt
+                                    </span>
                                 )}
                                 
-                                <span className={`text-xs font-bold ${item.status === 'approved' ? 'text-gray-800' : 'text-gray-400 line-through'}`}>
+                                <span className={`text-xs font-bold ${isApprovedOrPending ? 'text-gray-800' : 'text-gray-400 line-through'}`}>
                                     {displayDuration} giờ
                                 </span>
                             </div>

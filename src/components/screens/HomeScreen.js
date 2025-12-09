@@ -183,7 +183,7 @@ export default function HomeScreen({ user, myShifts, onNavigate }) {
         <div className="mt-[8px]">
             <div className="flex justify-between items-center mb-[12px]">
                 <h3 className="text-[16px] font-semibold text-[#191919]">Ca làm sắp tới</h3>
-                <button onClick={() => onNavigate('schedule')} className="text-[14px] font-semibold text-[#d3602d] active:opacity-60">View all</button>
+                <button onClick={() => onNavigate('schedule')} className="text-[14px] font-semibold text-[#d3602d] active:opacity-60">Xem tất cả</button>
             </div>
             {nextShift ? (
                 <div className="bg-white rounded-[16px] p-[12px] border border-[#eaeaea] shadow-sm">
