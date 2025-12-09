@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Bell, User, ChevronRight, LogIn, LogOut, Clock, Calendar } from 'lucide-react';
 import CheckInCard from '../common/CheckInCard';
 import LeaveRequestModal from '../LeaveRequest';
-import { getTodayKey, getFormattedDate, getCurrentTime, getRoleBadgeStyle } from '../../utils/helpers';
+import { getTodayKey, getFormattedDate, getCurrentTime } from '../../utils/helpers';
 
 export default function HomeScreen({ user, myShifts, onNavigate }) {
-  const [attendanceStatus, setAttendanceStatus] = useState('none'); 
+  const [attendanceStatus, setAttendanceStatus] = useState('none');
   const [logs, setLogs] = useState([]);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
@@ -32,17 +32,18 @@ export default function HomeScreen({ user, myShifts, onNavigate }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F5F5] font-sans relative overflow-hidden">
+    <div className="flex flex-col h-full bg-[#f5f5f5] font-sans relative overflow-hidden">
       
-      {/* 1. HEADER CAM (Phần nền phía trên) */}
-      <div className="bg-gradient-to-br from-[#FF8C00] to-[#E05900] pt-[56px] pb-[100px] px-[16px] rounded-b-[24px] relative shrink-0 z-0">
-        {/* Date Badge (Nằm trong Header) */}
-         <div className="inline-flex items-center gap-2">
+      {/* 1. HEADER CỐ ĐỊNH (Phần khung cam) */}
+      <div className="bg-gradient-to-br from-[#FF8C00] to-[#E05900] pt-[56px] pb-[100px] px-[16px] rounded-b-[24px] relative shrink-0 z-0 shadow-md">
+         {/* Date Badge */}
+         <div className="inline-flex items-center gap-2 mb-3 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
             <Calendar size={14} className="text-white"/>
             <span className="text-[12px] font-semibold text-white">{getFormattedDate()}</span>
-         </div>     
-         {/* Top Info Row */}
-         <div className="flex justify-between items-start mb-4">
+         </div>
+         
+         {/* Info Row */}
+         <div className="flex justify-between items-start">
              <div className="flex gap-3 items-center">
                  {/* Avatar */}
                  <div className="w-[48px] h-[48px] rounded-[28px] border-2 border-white p-[2px]">
@@ -57,10 +58,10 @@ export default function HomeScreen({ user, myShifts, onNavigate }) {
                  </div>
              </div>
              
-             {/* Bell */}
+             {/* Bell - Nhấn vào chuyển màn Notification */}
              <button 
                 onClick={() => onNavigate('notifications')}
-                className="w-[40px] h-[40px] bg-white/20 rounded-full flex items-center justify-center relative backdrop-blur-sm"
+                className="w-[40px] h-[40px] bg-white/20 rounded-full flex items-center justify-center relative backdrop-blur-sm active:scale-95 transition-transform"
              >
                  <Bell size={20} className="text-white" strokeWidth={2}/>
                  <span className="absolute top-[8px] right-[10px] w-[8px] h-[8px] bg-red-500 rounded-full border border-[#E05900]"></span>
@@ -68,8 +69,9 @@ export default function HomeScreen({ user, myShifts, onNavigate }) {
          </div>
       </div>
 
-      {/* 2. BODY CONTENT (Đè lên Header) */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden z-10 no-scrollbar flex flex-col gap-[16px] px-4 -mt-[80px]">
+      {/* 2. BODY SCROLLABLE (Phần nội dung cuộn bên dưới Header) */}
+      {/* -mt-[80px] để kéo nội dung lên đè vào Header */}
+      <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 px-[16px] -mt-[80px] pb-[40px] flex flex-col gap-[16px]">
         
         {/* === THẺ CHẤM CÔNG (CheckInCard) === */}
         <CheckInCard 
@@ -80,99 +82,104 @@ export default function HomeScreen({ user, myShifts, onNavigate }) {
             onRequestLeave={() => setShowLeaveModal(true)}
         />
 
-        {/* === THÔNG TIN CA LÀM (CurrentShiftInfo) - Màu xanh nhạt === */}
-        {todayShift ? (
-            <div className="bg-[#fff3e6] rounded-[16px] p-4 flex flex-col gap-2 relative border border-[#ffe5cc]">
-                <div className="flex items-center gap-2 mb-1">
-                    <div className="w-6 h-6 flex items-center justify-center">
-                        <Clock size={20} className="text-[#c52c2c]" /> 
+        {/* === THÔNG TIN CA LÀM (CurrentShiftInfo) === */}
+        {/* Nền màu cam nhạt chuẩn thiết kế: rgba(255,229,204,0.52) */}
+        {todayShift && (
+            <div className="bg-[rgba(255,229,204,0.52)] rounded-[16px] p-[16px] flex flex-col gap-[12px] relative">
+                {/* Header: Icon + Title */}
+                <div className="flex items-center gap-[8px]">
+                    <Clock size={20} className="text-[#c52c2c]" /> 
+                    <p className="text-[16px] font-semibold text-[#c52c2c] leading-[24px]">Bạn có 1 ca làm hôm nay</p>
+                </div>
+
+                {/* Body: Time + Info */}
+                <div className="flex flex-col gap-[4px] pl-[32px]">
+                    <p className="text-[24px] font-semibold text-[#191919] leading-[32px]">{todayShift.time}</p>
+                    <div className="flex items-center gap-[8px] mt-[4px]">
+                        <div className="w-[6px] h-[6px] bg-[#D3602D] rounded-full"></div>
+                        <p className="text-[14px] font-normal text-[#666b70] uppercase">
+                            {todayShift.role} | {todayShift.location}
+                        </p>
                     </div>
-                    <p className="text-[14px] font-semibold text-[#c52c2c]">Bạn có 1 ca làm hôm nay</p>
                 </div>
-
-                <p className="text-[24px] font-bold text-[#191919] leading-[32px]">
-                    {todayShift.time}
-                </p>
-
-                <div className="flex items-center gap-2 mt-1">
-                    <div className="w-[6px] h-[6px] bg-[#D3602D] rounded-full"></div>
-                    <p className="text-[14px] font-medium text-[#666b70] uppercase tracking-wide">
-                        {todayShift.role} | {todayShift.location}
-                    </p>
-                </div>
-            </div>
-        ) : (
-            <div className="bg-white rounded-[16px] p-4 text-center text-gray-400 text-sm italic shadow-sm">
-                Hôm nay không có ca làm việc
             </div>
         )}
 
         {/* === HOẠT ĐỘNG HÔM NAY === */}
-        <div className="mt-2">
-            <div className="flex justify-between items-center mb-3">
-                <h3 className="text-[16px] font-bold text-[#191919]">Hoạt động hôm nay</h3>
-                <button className="text-[14px] font-semibold text-[#d3602d] flex items-center gap-1 hover:underline">
+        <div className="mt-[8px]">
+            <div className="flex justify-between items-center mb-[12px]">
+                <h3 className="text-[16px] font-semibold text-[#191919]">Hoạt động hôm nay</h3>
+                {/* Nhấn Xem lịch sử -> Chuyển tab Attendance */}
+                <button 
+                    onClick={() => onNavigate('attendance')}
+                    className="text-[14px] font-semibold text-[#d3602d] flex items-center gap-1 active:opacity-60"
+                >
                     Xem lịch sử <ChevronRight size={16}/>
                 </button>
             </div>
 
-            <div className="bg-white rounded-[16px] border border-[#e5e7eb] shadow-sm overflow-hidden">
+            <div className="bg-white rounded-[16px] border border-[#eaeaea] overflow-hidden shadow-sm">
                 {logs.length > 0 ? (
                     logs.map((log, index) => (
-                        <div key={index} className="flex items-center gap-4 px-4 py-3 border-b border-[#e5e7eb] last:border-0">
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${log.type === 'in' ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-600'}`}>
-                                {log.type === 'in' ? <LogIn size={18}/> : <LogOut size={18}/>}
+                        <div key={index} className="flex items-center gap-4 px-[16px] py-[12px] border-b border-[#eaeaea] last:border-0">
+                            <div className="rotate-180 shrink-0">
+                                {log.type === 'in' ? <LogIn size={24} className="text-[#F98B05]"/> : <LogOut size={24} className="text-[#F98B05]"/>}
                             </div>
                             <div className="flex-1">
-                                <p className="text-[14px] font-semibold text-[#191919]">
+                                <p className="text-[16px] font-semibold text-[#191919]">
                                     {log.type === 'in' ? 'Chấm vào' : 'Chấm ra'}
                                 </p>
-                                <p className="text-[12px] text-[#666b70] mt-0.5">{log.date}</p>
                             </div>
-                            <span className="text-[14px] font-mono font-medium text-[#191919]">
-                                {log.time}
-                            </span>
+                            <div className="text-right">
+                                <p className="text-[12px] text-[#666b70] font-normal mb-0.5">{log.date}</p>
+                                <div className="flex items-center justify-end gap-2">
+                                    <div className="w-[6px] h-[6px] bg-[#D9D9D9] rounded-full"></div>
+                                    <p className="text-[14px] text-[#666b70] font-normal">{log.time}</p>
+                                </div>
+                            </div>
                         </div>
                     ))
                 ) : (
-                    <div className="py-6 text-center text-gray-400 text-sm">Chưa có hoạt động nào</div>
+                    <div className="py-[24px] text-center text-gray-400 text-sm">Chưa có hoạt động nào</div>
                 )}
             </div>
         </div>
 
         {/* === CA LÀM SẮP TỚI === */}
-        <div className="pb-8">
-            <div className="flex justify-between items-center mb-3">
-                <h3 className="text-[16px] font-bold text-[#191919]">Ca làm sắp tới</h3>
-                <button onClick={() => onNavigate('schedule')} className="text-[14px] font-semibold text-[#d3602d] flex items-center gap-1 hover:underline">
-                    View all <ChevronRight size={16}/>
+        <div className="mt-[8px]">
+            <div className="flex justify-between items-center mb-[12px]">
+                <h3 className="text-[16px] font-semibold text-[#191919]">Ca làm sắp tới</h3>
+                <button onClick={() => onNavigate('schedule')} className="text-[14px] font-semibold text-[#d3602d] active:opacity-60">
+                    Xem tất cả
                 </button>
             </div>
 
             {nextShift ? (
-                <div className="bg-white rounded-[16px] p-4 border border-[#e5e7eb] shadow-sm flex items-center gap-4">
-                    <div className="bg-[#ffe5cc85] rounded-[12px] min-w-[64px] h-[72px] flex flex-col items-center justify-center border border-orange-100">
-                        <span className="text-[11px] font-medium text-black uppercase">{nextShift.dayStr}</span>
-                        <span className="text-[22px] font-bold text-[#191919] leading-none my-0.5">{nextShift.dateStr}</span>
-                        <span className="text-[10px] font-medium text-black uppercase">THÁNG 11</span>
-                    </div>
-
-                    <div className="flex-1 flex flex-col justify-center">
-                        <p className="text-[16px] font-bold text-[#191919] mb-1">{nextShift.time}</p>
-                        <p className="text-[13px] font-medium text-[#666b70] mb-1">UNCLE BI</p>
-                        <div className="flex items-center gap-2">
-                            <div className={`w-[5px] h-[5px] rounded-full ${getRoleBadgeStyle(nextShift.role)}`}></div>
-                            <p className="text-[12px] font-medium text-[#666b70] uppercase">
-                                {nextShift.role}
-                            </p>
+                <div className="bg-white rounded-[16px] p-[12px] border border-[#eaeaea] shadow-sm">
+                    <div className="flex items-center gap-[16px]">
+                        {/* Date Box: bg-[#ffe5cc]/52 */}
+                        <div className="bg-[rgba(255,229,204,0.52)] rounded-[12px] w-[71px] h-[80px] flex flex-col items-center justify-center shrink-0">
+                            <span className="text-[12px] font-normal text-black text-center">{nextShift.dayStr}</span>
+                            <span className="text-[20px] font-semibold text-[#191919] my-[4px]">{nextShift.dateStr}</span>
+                            <span className="text-[12px] font-normal text-black text-center">THÁNG 11</span>
                         </div>
+
+                        {/* Shift Info */}
+                        <div className="flex-1 flex flex-col gap-[4px]">
+                            <p className="text-[16px] font-semibold text-[#191919]">{nextShift.time}</p>
+                            <p className="text-[14px] font-semibold text-[#666b70]">UNCLE BI</p>
+                            <div className="flex items-center gap-[6px] mt-[4px]">
+                                <div className="w-[6px] h-[6px] bg-[#D3602D] rounded-full"></div>
+                                <p className="text-[14px] font-normal text-[#666b70] uppercase">
+                                    {nextShift.role} | {nextShift.location}
+                                </p>
+                            </div>
+                        </div>
+                        <ChevronRight size={20} className="text-gray-300"/>
                     </div>
-                    
                 </div>
             ) : (
-                <div className="text-center text-gray-400 text-sm py-4 border-2 border-dashed border-gray-200 rounded-[16px]">
-                    Không có ca sắp tới
-                </div>
+                <div className="py-[24px] text-center text-gray-400 text-sm bg-white rounded-[16px] border border-[#eaeaea]">Không có ca sắp tới</div>
             )}
         </div>
 

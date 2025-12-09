@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Calendar, Clock, Trash2, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
-
+import { getRoleBadgeStyle } from '../../utils/helpers';
 // --- HELPERS ---
 
 // Tính giờ làm
@@ -197,9 +197,8 @@ export default function AttendanceHistoryScreen({ onBack }) {
                                 <div className="flex items-center flex-wrap gap-2 text-[11px] text-gray-500">
                                     <Calendar size={12}/>
                                     <span>{item.scheduledTime}</span>
-                                    <span className="bg-[#7E57C2] text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-                                        {item.role}
-                                    </span>
+                                    {/* Thêm khung bo tròn ở ngoài vai trò theo màu theo role, chữ theo màu của role */}
+                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${getRoleBadgeStyle(item.role)}`}>{item.role}</span>
                                     <span>{item.location}</span>
                                 </div>
                                 <button className="text-gray-300 hover:text-red-500">

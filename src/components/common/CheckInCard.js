@@ -36,7 +36,7 @@ export default function CheckInCard({ shift, attendanceStatus, onCheckIn, onChec
         <div className="flex-1 flex flex-col items-center gap-[12px]">
              <span className="text-[16px] text-[#191919] font-normal leading-[24px]">Giờ kết thúc</span>
              <span className="text-[20px] text-black font-semibold leading-[32px]">
-                {attendanceStatus === 'checked_out' ? realtime : '--:--:--'}
+                {attendanceStatus === 'checked_out' ? shift?.endTimeLogged || '--:--:--' : realtime}
              </span>
         </div>
       </div>

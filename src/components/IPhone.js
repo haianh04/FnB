@@ -12,6 +12,7 @@ import LoginScreen from "./screens/LoginScreen";
 import UserProfile from "./screens/UserProfile";
 import MoreMenu from "./screens/MoreMenu";
 import NotificationScreen from "./screens/NotificationScreen";
+import SalaryScreen from "./screens/SalaryScreen";
 
 // --- IMPORT MỚI ---
 import AttendanceHistoryScreen from "./screens/AttendanceHistoryScreen";
@@ -31,33 +32,23 @@ export default function IPhone() {
 
   // --- LOGIC NHẬN CA (GIỮ NGUYÊN) ---
   const attemptAcceptShift = (shiftToAccept) => {
-    // ... (Giữ nguyên logic cũ của bạn ở đây) ...
+    // ... logic cũ ...
     const normalizedRole = shiftToAccept.role.toLowerCase();
     const hasRole = CURRENT_USER.roles.some(r => r.toLowerCase() === normalizedRole);
-    
-    if (!hasRole) {
-      return { success: false, message: `Bạn không có vai trò ${shiftToAccept.role}!` };
-    }
-
+    if (!hasRole) return { success: false, message: `Bạn không có vai trò ${shiftToAccept.role}!` };
     const myDaySchedule = myShifts.find(d => d.date === shiftToAccept.date);
     if (myDaySchedule) {
       const newTimeRange = parseTimeRange(shiftToAccept.time);
       for (let existingShift of myDaySchedule.shifts) {
-        const existingTimeRange = parseTimeRange(existingShift.time);
-        if (isOverlapping(newTimeRange, existingTimeRange)) {
-           return { 
-             success: false, 
-             message: `Trùng giờ với ca: ${existingShift.time} (${existingShift.role})` 
-           };
+        if (isOverlapping(newTimeRange, parseTimeRange(existingShift.time))) {
+           return { success: false, message: `Trùng giờ với ca: ${existingShift.time}` };
         }
       }
     }
-
     setMarketShifts(prev => prev.filter(s => s.id !== shiftToAccept.id));
     setMyShifts(prev => {
       const targetDate = shiftToAccept.date;
       const dayExists = prev.some(item => item.date === targetDate);
-      
       const newShiftObj = {
         id: `accepted_${Date.now()}`,
         time: shiftToAccept.time,
@@ -65,28 +56,17 @@ export default function IPhone() {
         role: shiftToAccept.role,
         transferFrom: shiftToAccept.owner 
       };
-
       if (dayExists) {
         return prev.map(dayGroup => {
           if (dayGroup.date === targetDate) {
-            return {
-              ...dayGroup, 
-              shifts: [...dayGroup.shifts, newShiftObj].sort((a, b) => 
-                parseTimeRange(a.time).start - parseTimeRange(b.time).start
-              )
-            };
+            return { ...dayGroup, shifts: [...dayGroup.shifts, newShiftObj].sort((a, b) => parseTimeRange(a.time).start - parseTimeRange(b.time).start) };
           }
           return dayGroup;
         });
       } else {
-        return [...prev, {
-          date: targetDate,
-          day: shiftToAccept.day,
-          shifts: [newShiftObj]
-        }];
+        return [...prev, { date: targetDate, day: shiftToAccept.day, shifts: [newShiftObj] }];
       }
     });
-
     setTimeout(() => setCurrentTab('schedule'), 1000);
     return { success: true, message: "Nhận ca thành công!" };
   };
@@ -129,21 +109,14 @@ export default function IPhone() {
          )}
          
          {currentTab === 'profile' && <UserProfile user={CURRENT_USER} onBack={() => handleNavigate('more')} />}
-         {currentTab === 'notifications' && <NotificationScreen onBack={() => handleNavigate('more')} />}
          
-         {/* --- CÁC MÀN HÌNH MỚI --- */}
-         {currentTab === 'attendance' && <AttendanceHistoryScreen onBack={() => handleNavigate('more')} />}
+         {/* QUAN TRỌNG: Nút Back ở NotificationScreen quay về 'home' */}
+         {currentTab === 'notifications' && <NotificationScreen onBack={() => handleNavigate('home')} />}
+         
+         {currentTab === 'attendance' && <AttendanceHistoryScreen onBack={() => handleNavigate('home')} />}
          {currentTab === 'availability' && <AvailabilityScreen onBack={() => handleNavigate('more')} />}
-         
-         {['salary'].includes(currentTab) && (
-           <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3 bg-gray-50">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-2xl">🚧</div>
-              <span className="text-sm font-medium opacity-60">Tính năng đang phát triển</span>
-              <button onClick={() => handleNavigate('more')} className="text-[#F97316] font-bold text-sm px-4 py-2 border border-orange-200 rounded-lg hover:bg-orange-50">
-                  Quay lại
-              </button>
-           </div>
-         )}
+         {currentTab === 'salary' && <SalaryScreen onBack={() => handleNavigate('more')} />}
+          
       </div>
       
       <div className="bg-white z-50 shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.03)]">

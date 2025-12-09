@@ -26,7 +26,7 @@ export default function LeaveRequestModal({ onClose }) {
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Loại nghỉ phép <span className="text-red-500">*</span></label>
                 <div className="relative">
-                    <select className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl appearance-none outline-none focus:border-[#F97316] text-gray-700">
+                    <select className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl appearance-none outline-none focus:border-[#e08c27] text-gray-700">
                         <option>Nghỉ phép năm</option>
                         <option>Nghỉ ốm</option>
                         <option>Nghỉ việc riêng</option>
@@ -56,7 +56,7 @@ export default function LeaveRequestModal({ onClose }) {
                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Ngày nghỉ phép <span className="text-red-500">*</span></label>
                     <div className="relative">
-                        <input type="date" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#F97316] text-gray-700"/>
+                        <input type="date" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#e08c27] text-gray-700"/>
                         <Calendar className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" size={18}/>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">Số ngày xin nghỉ: <span className="font-bold text-black">1 ngày</span></p>
@@ -79,14 +79,14 @@ export default function LeaveRequestModal({ onClose }) {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Lý do nghỉ phép</label>
                 <textarea 
                     placeholder="Nhập lý do..." 
-                    className="w-full p-3 h-32 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#F97316] text-gray-700 resize-none"
+                    className="w-full p-3 h-32 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-[#e08c27] text-gray-700 resize-none"
                 ></textarea>
             </div>
         </div>
 
-        {/* Footer Button */}
+        {/* Footer Button - ĐÃ ĐỔI SANG MÀU CAM */}
         <div className="pt-4 border-t border-gray-100">
-            <button onClick={onClose} className="w-full py-3.5 bg-[#009688] text-white font-bold rounded-xl active:scale-95 transition-transform">
+            <button onClick={onClose} className="w-full py-3.5 bg-[#e08c27] text-white font-bold rounded-xl active:scale-95 transition-transform shadow-lg shadow-orange-100">
                 Gửi duyệt
             </button>
         </div>
