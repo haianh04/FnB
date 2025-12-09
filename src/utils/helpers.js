@@ -31,12 +31,16 @@ export const getRoleBadgeStyle = (roleName) => {
 };
 
 export const getTodayKey = () => {
-  const today = new Date(2025, 10, 26); 
-  return today.getDate().toString();
+  const today = new Date(); // Lấy ngày hiện tại của máy tính
+  // Trả về chuỗi ngày (ví dụ "09", "10", "25"). Cần padStart để đảm bảo luôn có 2 chữ số
+  return String(today.getDate()).padStart(2, '0');
 };
 
 export const getFormattedDate = () => {
-  return "Thứ Tư, 26 tháng 11 năm 2025"; 
+  const today = new Date();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  // Format sang tiếng Việt: "Thứ Ba, 9 tháng 12, 2025"
+  return today.toLocaleDateString('vi-VN', options);
 };
 
 // Logic check-in mới

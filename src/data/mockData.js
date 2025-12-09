@@ -43,7 +43,22 @@ export const INITIAL_MY_SHIFTS = [
     shifts: [
       { id: 104, time: "14:00 – 22:00", location: "CHÚ BI", role: "PHỤC VỤ", transferFrom: "Lê Văn Hùng" } // Đã nhận từ người khác
     ]
-  }
+  },
+{
+    // CẤU HÌNH NGÀY HÔM NAY ĐỂ TEST
+    date: "19", day: "T3",
+    shifts: [
+      { 
+        id: 999, 
+        // HÃY SỬA GIỜ Ở DÒNG DƯỚI ĐỂ TEST:
+        // Nếu bây giờ là 18:15, để 19:00 sẽ bị KHÓA. Để 18:20 sẽ MỞ.
+        time: "19:00 – 23:00", 
+        location: "CHÚ BI", 
+        role: "PHA CHẾ", 
+        transferFrom: null 
+      }
+    ]
+  },
 ];
 
 // --- KHO CA LÀM (MARKET SHIFTS) ---

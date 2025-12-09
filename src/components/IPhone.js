@@ -13,6 +13,7 @@ import UserProfile from "./screens/UserProfile";
 import MoreMenu from "./screens/MoreMenu";
 import NotificationScreen from "./screens/NotificationScreen";
 import SalaryScreen from "./screens/SalaryScreen";
+import ChangePasswordScreen from "./screens/ChangePasswordScreen";
 
 // --- IMPORT MỚI ---
 import AttendanceHistoryScreen from "./screens/AttendanceHistoryScreen";
@@ -116,7 +117,8 @@ export default function IPhone() {
          {currentTab === 'attendance' && <AttendanceHistoryScreen onBack={() => handleNavigate('home')} />}
          {currentTab === 'availability' && <AvailabilityScreen onBack={() => handleNavigate('more')} />}
          {currentTab === 'salary' && <SalaryScreen onBack={() => handleNavigate('more')} />}
-          
+         {currentTab === 'change-password' && <ChangePasswordScreen user={CURRENT_USER} onBack={() => handleNavigate('more')} />}
+
       </div>
       
       <div className="bg-white z-50 shrink-0 shadow-[0_-5px_20px_rgba(0,0,0,0.03)]">

@@ -1,16 +1,17 @@
 import React from 'react';
 import { 
   Briefcase, DollarSign, History, CalendarPlus, 
-  Bell, ChevronRight, UserCircle, LogOut 
+  Bell, ChevronRight, UserCircle, LogOut, Lock 
 } from 'lucide-react';
-import { getRoleBadgeStyle } from '../../utils/helpers'; // Import hàm helper
+import { getRoleBadgeStyle } from '../../utils/helpers'; 
 
 export default function MoreMenu({ onNavigate, onLogout, user }) {
   const menuItems = [
     { id: 'market', label: 'Kho ca làm', icon: <Briefcase size={20} className="text-blue-500" />, desc: 'Nhận thêm ca làm việc trống' },
-    { id: 'salary', label: 'Lương và Thưởng', icon: <DollarSign size={20} className="text-green-500" />, desc: 'Xem phiếu lương và lịch sử chi trả' },
+    { id: 'salary', label: 'Lương & Thưởng', icon: <DollarSign size={20} className="text-green-500" />, desc: 'Xem phiếu lương và lịch sử chi trả' },
     { id: 'attendance', label: 'Lịch sử chấm công', icon: <History size={20} className="text-orange-500" />, desc: 'Kiểm tra giờ vào/ra ca làm' },
     { id: 'availability', label: 'Đăng ký lịch rảnh', icon: <CalendarPlus size={20} className="text-purple-500" />, desc: 'Cập nhật thời gian có thể làm việc' },
+    { id: 'change-password', label: 'Đổi mật khẩu', icon: <Lock size={20} className="text-red-500" />, desc: 'Cập nhật mật khẩu đăng nhập' },
   ];
 
   return (
@@ -44,7 +45,7 @@ export default function MoreMenu({ onNavigate, onLogout, user }) {
       </div>
 
       {/* Menu Items */}
-      <div className="space-y-2 flex-1 overflow-y-auto no-scrollbar">
+      <div className="space-y-2 flex-1 overflow-y-auto no-scrollbar pb-20">
         {menuItems.map((item) => (
           <button key={item.id} onClick={() => onNavigate(item.id)} className="w-full bg-white p-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-all hover:border-orange-200 group">
             <div className="flex items-center gap-3">
@@ -54,14 +55,16 @@ export default function MoreMenu({ onNavigate, onLogout, user }) {
             <ChevronRight size={16} className="text-gray-300 group-hover:text-orange-400 transition-colors" />
           </button>
         ))}
-        <button onClick={onLogout} className="w-full bg-white p-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-all hover:bg-gray-50 hover:border-gray-200 group">
+        
+        <button onClick={onLogout} className="w-full bg-white p-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.02)] border border-gray-100 flex items-center justify-between active:scale-[0.98] transition-all hover:bg-gray-50 hover:border-gray-200 group mt-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center border border-red-100 group-hover:bg-white transition-colors"><LogOut size={18} className="text-red-500" /></div>
               <div className="text-left"><p className="font-bold text-gray-900 text-base">Đăng xuất</p><p className="text-xs text-gray-600 mt-0">Thoát khỏi tài khoản</p></div>
             </div>
-          </button>
+        </button>
       </div>
-      <div className="mt-2 text-center shrink-0"><p className="text-[9px] text-gray-400">XinK FnB App v1.0.8</p></div>
+      
+      <div className="text-center"><p className="text-[9px] text-gray-400">XinK FnB App v1.1.0</p></div>
     </div>
   );
 }

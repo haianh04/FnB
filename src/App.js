@@ -4,20 +4,22 @@ import IPhone from './components/IPhone';
 import WebEmploymentHistory from './components/WebEmploymentHistory';
 import SettingsScreen from './components/SettingsScreen';
 import WebSchedule from './components/WebSchedule';
-import WebAvailability from './components/WebAvailability'; // IMPORT MỚI
+import WebAvailability from './components/WebAvailability';
+import WebAttendance from './components/WebAttendance';
 
-// Import Icons
-import { Calendar, DollarSign, Settings, Smartphone, Menu, Clock } from 'lucide-react';
+// Import Icons - Added ClipboardList here
+import { Calendar, DollarSign, Settings, Smartphone, Menu, Clock, ClipboardList } from 'lucide-react';
 
 function App() {
-  const [view, setView] = useState('availability'); // Mặc định hiển thị Web Duyệt Lịch để bạn test ngay
+  const [view, setView] = useState('IPhone');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Danh sách menu
   const menuItems = [
     { id: 'mobile', label: 'Mobile App Demo', icon: <Smartphone size={20} /> },
     { id: 'schedule', label: 'Quản lý Lịch', icon: <Calendar size={20} /> },
-    { id: 'availability', label: 'Duyệt lịch rảnh', icon: <Clock size={20} /> }, // MENU MỚI
+    { id: 'availability', label: 'Duyệt lịch rảnh', icon: <Clock size={20} /> },
+    { id: 'attendance', label: 'Chấm công', icon: <ClipboardList size={20} /> },
     { id: 'salary', label: 'Lương & Hồ sơ', icon: <DollarSign size={20} /> },
     { id: 'settings', label: 'Cài đặt hệ thống', icon: <Settings size={20} /> },
   ];
@@ -92,6 +94,9 @@ function App() {
 
         {/* VIEW QUẢN LÝ LỊCH RẢNH */}
         {view === 'availability' && <WebAvailability />}
+        
+        {/* VIEW QUẢN LÝ CHẤM CÔNG */}
+        {view === 'attendance' && <WebAttendance />}
 
         {view === 'salary' && (
           <div className="w-full h-full overflow-auto">

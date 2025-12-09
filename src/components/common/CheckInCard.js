@@ -1,20 +1,29 @@
+// CheckInCard.js
 import React from 'react';
-import { FilePlus } from 'lucide-react';
-import { useRealtimeClock, canCheckIn, getCurrentTime } from '../../utils/helpers';
+import { FilePlus, AlertCircle } from 'lucide-react';
+import { useRealtimeClock } from '../../utils/helpers';
 
-export default function CheckInCard({ shift, attendanceStatus, onCheckIn, onCheckOut, onRequestLeave }) {
-  // Sử dụng đồng hồ thời gian thực
+// Nhận thêm props: checkInDisabled, warningMessage
+export default function CheckInCard({ 
+    shift, 
+    attendanceStatus, 
+    onCheckIn, 
+    onCheckOut, 
+    onRequestLeave, 
+    checkInDisabled, 
+    warningMessage 
+}) {
   const realtime = useRealtimeClock();
-  const simpleTime = getCurrentTime(); // Dùng để check logic (HH:mm)
 
-  // Logic kiểm tra
-  const isActiveTime = shift ? canCheckIn(shift.time, simpleTime) : false;
-  const isCheckInDisabled = attendanceStatus !== 'none' || !isActiveTime;
+  // Logic disable
+  // 1. Nếu đã checkin -> Disable nút checkin
+  // 2. Nếu checkInDisabled = true (do logic từ Home truyền xuống) -> Disable
+  const isCheckInBtnDisabled = attendanceStatus !== 'none' || checkInDisabled;
+  
+  // Nút Checkout chỉ sáng khi đã Check In
   const isCheckOutDisabled = attendanceStatus !== 'checked_in';
 
   return (
-    // Style container: bg-white rounded-[16px] shadow-[0px_0px_10px_0px_rgba(0,0,0,0.15)]
-    // Margin-top âm để đè lên phần cam ở trang chủ (sẽ được chỉnh ở HomeScreen)
     <div className="bg-white rounded-[16px] p-[12px] shadow-[0px_0px_10px_0px_rgba(0,0,0,0.15)] relative z-20 w-full flex flex-col gap-[24px]">
       
       {/* 1. KHU VỰC HIỂN THỊ GIỜ (Realtime) */}
@@ -46,15 +55,17 @@ export default function CheckInCard({ shift, attendanceStatus, onCheckIn, onChec
         
         {/* Hàng nút Check In / Check Out */}
         <div className="flex gap-[8px] w-full">
-            {/* Nút Check In (Màu cam #e08c27) */}
+            {/* Nút Check In */}
             <button 
                 onClick={onCheckIn}
-                disabled={isCheckInDisabled}
+                disabled={isCheckInBtnDisabled}
                 className={`
                     flex-1 py-[10px] rounded-[10px] flex items-center justify-center transition-all h-[40px]
                     ${attendanceStatus === 'checked_in' 
-                        ? 'bg-green-100 text-green-700' 
-                        : (isActiveTime ? 'bg-[#e08c27] text-white active:scale-95' : 'bg-gray-200 text-gray-400 cursor-not-allowed')
+                        ? 'bg-green-100 text-green-700' // Đã check in thành công
+                        : (!isCheckInBtnDisabled 
+                            ? 'bg-[#e08c27] text-white active:scale-95' // Được phép check in
+                            : 'bg-[#e6e7e8] text-[#666b70] cursor-not-allowed opacity-70') // Bị khóa
                     }
                 `}
             >
@@ -63,7 +74,7 @@ export default function CheckInCard({ shift, attendanceStatus, onCheckIn, onChec
                 </span>
             </button>
 
-            {/* Nút Check Out (Màu xám #e6e7e8, Text #666b70) */}
+            {/* Nút Check Out */}
             <button 
                  onClick={onCheckOut}
                  disabled={isCheckOutDisabled}
@@ -79,7 +90,18 @@ export default function CheckInCard({ shift, attendanceStatus, onCheckIn, onChec
             </button>
         </div>
 
-        {/* Nút Đơn xin nghỉ (Màu đỏ #c52c2c) */}
+        {/* --- KHU VỰC THÔNG BÁO CẢNH BÁO --- */}
+        {/* Chỉ hiện khi chưa check-in và có cảnh báo */}
+        {attendanceStatus === 'none' && warningMessage && (
+            <div className="flex items-center justify-center gap-2 bg-red-50 border border-red-100 rounded-[8px] py-[8px] px-[12px] animate-in fade-in slide-in-from-top-1 duration-300">
+                <AlertCircle size={16} className="text-[#c52c2c] shrink-0" />
+                <span className="text-[13px] font-medium text-[#c52c2c] text-center leading-tight">
+                    {warningMessage}
+                </span>
+            </div>
+        )}
+
+        {/* Nút Đơn xin nghỉ */}
         <button 
             onClick={onRequestLeave}
             className="w-full py-[10px] rounded-[10px] bg-[#c52c2c] flex items-center justify-center gap-[10px] active:scale-[0.98] transition-transform h-[40px]"
