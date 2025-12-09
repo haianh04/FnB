@@ -36,7 +36,7 @@ export const getTodayKey = () => {
 };
 
 export const getFormattedDate = () => {
-  return "Thứ Tư, 26 tháng 11"; 
+  return "Thứ Tư, 26 tháng 11 năm 2025"; 
 };
 
 // Logic check-in mới

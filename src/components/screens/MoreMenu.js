@@ -8,7 +8,7 @@ import { getRoleBadgeStyle } from '../../utils/helpers'; // Import hàm helper
 export default function MoreMenu({ onNavigate, onLogout, user }) {
   const menuItems = [
     { id: 'market', label: 'Kho ca làm', icon: <Briefcase size={20} className="text-blue-500" />, desc: 'Nhận thêm ca làm việc trống' },
-    { id: 'salary', label: 'Lương & Thưởng', icon: <DollarSign size={20} className="text-green-500" />, desc: 'Xem phiếu lương và lịch sử chi trả' },
+    { id: 'salary', label: 'Lương và Thưởng', icon: <DollarSign size={20} className="text-green-500" />, desc: 'Xem phiếu lương và lịch sử chi trả' },
     { id: 'attendance', label: 'Lịch sử chấm công', icon: <History size={20} className="text-orange-500" />, desc: 'Kiểm tra giờ vào/ra ca làm' },
     { id: 'availability', label: 'Đăng ký lịch rảnh', icon: <CalendarPlus size={20} className="text-purple-500" />, desc: 'Cập nhật thời gian có thể làm việc' },
   ];
