@@ -483,13 +483,16 @@ const WebAttendance = () => {
                       )}
                     </td>
                     <td className="p-3 text-right">
+                    {/* Quy đổi thiếu phút thành giờ */}
+                    <div>{formatDecimal(row.missingMinutes / 60)}h</div>
                       {row.missingMinutes > 0 ? (
-                        <span className={!isRejected ? 'text-red-600 font-bold' : ''}>-{row.missingMinutes}</span>
+                        <span className={!isRejected ? 'text-red-600 font-bold' : ''}>-{row.missingMinutes}p</span>
                       ) : '-'}
                     </td>
-                    <td className="p-3 text-right font-medium">{formatDecimal(row.standardHours)}</td>
-                    <td className="p-3 text-right font-medium text-purple-700">{formatDecimal(row.otHours)}</td>
-                    <td className="p-3 text-right text-gray-500">{row.breakTime}</td>
+                    <td className="p-3 text-right font-medium">{formatDecimal(row.standardHours)}h</td>
+                    <td className="p-3 text-right font-medium text-purple-700">{formatDecimal(row.otHours)}h</td>
+                    {/* Quy dổi phút nghỉ thành giờ */}
+                    <td className="p-3 text-right text-gray-500">{formatDecimal(row.breakTime / 60)}h</td>
                     
                     {/* Lương dự kiến - Logic 0đ nếu Rejected, ĐÃ BỎ line-through */}
                     <td className={`p-3 text-right font-bold ${isRejected ? 'text-gray-400' : 'bg-green-50/50 text-green-700'}`}>
