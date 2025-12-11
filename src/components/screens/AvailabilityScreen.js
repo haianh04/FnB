@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, XCircle, Loader, Lock, Clock, ChevronRight as IconArrow, Edit3, Save, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, XCircle, Loader, Lock, Clock, ChevronRight as IconArrow, Save, AlertTriangle } from 'lucide-react';
 
 // --- HELPERS ---
 const getStartOfWeek = (date) => {
@@ -74,8 +74,8 @@ export default function AvailabilityScreen({ onBack }) {
   const handleNextWeek = () => setCurrentWeekStart(addDays(currentWeekStart, 7));
 
   // --- LOGIC KHÓA QUAN TRỌNG ---
-  // Khóa khi: (Trạng thái là Approved) HOẶC (Admin đóng đăng ký)
-  const isLocked = weekData.status === 'approved' || !isRegistrationOpen;
+  // Khóa khi: (Trạng thái là Approved)
+  const isLocked = weekData.status === 'approved';
 
   const handleOpenEdit = (dateStr, dayLabel) => {
       // Vẫn cho mở modal để xem (View-only) nhưng disable input
@@ -141,20 +141,6 @@ export default function AvailabilityScreen({ onBack }) {
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
-        
-        {/* --- ADMIN SIMULATION PANEL (ĐỂ TEST) --- */}
-        <div className="bg-gray-800 text-white p-3 flex justify-between items-center text-xs">
-            <span className="flex items-center gap-2 font-bold"><ShieldAlert size={14} className="text-orange-400"/> Admin Control:</span>
-            <div className="flex items-center gap-2">
-                <span>{isRegistrationOpen ? "Đang MỞ" : "Đang KHÓA"}</span>
-                <button 
-                    onClick={() => setIsRegistrationOpen(!isRegistrationOpen)}
-                    className={`w-[36px] h-[20px] rounded-full p-[2px] transition-colors relative ${isRegistrationOpen ? 'bg-green-500' : 'bg-red-500'}`}
-                >
-                    <div className={`w-[16px] h-[16px] bg-white rounded-full transition-transform shadow-sm ${isRegistrationOpen ? 'translate-x-[16px]' : 'translate-x-0'}`}></div>
-                </button>
-            </div>
-        </div>
         
         {/* 2. WEEK FILTER */}
         <div className="bg-white p-4 mb-4 border-b border-gray-200 sticky top-0 z-10 shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
