@@ -3,11 +3,18 @@ import {
   Search, Download, Edit, Check, X, 
   Clock, User, MapPin, Camera
 } from 'lucide-react';
-import { getRoleBadgeStyle } from 'C:/HOC_DAI_HOC/Work/my-app/src/utils/helpers.js';
 
 /**
  * CẤU HÌNH & HÀM TIỆN ÍCH
  */
+const getRoleBadgeStyle = (roleName) => {
+  const role = roleName.toUpperCase();
+  if (role.includes("PHỤC VỤ")) return "bg-orange-50 text-orange-600 border-orange-200"; 
+  if (role.includes("PHA CHẾ")) return "bg-blue-50 text-blue-600 border-blue-200"; 
+  if (role.includes("THU NGÂN")) return "bg-green-50 text-green-600 border-green-200"; 
+  if (role.includes("BẢO VỆ")) return "bg-yellow-50 text-yellow-600 border-yellow-200"; 
+  return "bg-gray-400"; 
+};
 
 const CONFIG = {
   ALLOWED_LATE_MINUTES: 0, 
