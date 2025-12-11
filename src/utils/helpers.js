@@ -27,6 +27,8 @@ export const getRoleBadgeStyle = (roleName) => {
   const role = (roleName || '').toLowerCase();
   if (role.includes("phục vụ")) return "bg-orange-50 text-orange-600 border-orange-200";
   else if (role.includes("pha chế")) return "bg-blue-50 text-blue-600 border-blue-200";
+  else if (role.includes("bảo vệ")) return "bg-green-50 text-green-600 border-green-200";
+  else if (role.includes("thu ngân")) return "bg-yellow-50 text-yellow-600 border-yellow-200";
   return "bg-gray-100 text-gray-600 border-gray-200";
 };
 
