@@ -203,7 +203,6 @@ export default function HomeScreen({ user, myShifts, onNavigate }) {
                                 </p>
                             </div>
                         </div>
-                        <ChevronRight size={20} className="text-gray-300"/>
                     </div>
                 </div>
             ) : (

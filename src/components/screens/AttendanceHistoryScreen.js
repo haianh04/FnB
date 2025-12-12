@@ -260,8 +260,8 @@ export default function AttendanceHistoryScreen({ onBack }) {
                                         <Loader size={10} className="animate-spin"/> Đang chờ duyệt
                                     </span>
                                 )}
-                                
-                                <span className={`text-xs font-bold ${isApprovedOrPending ? 'text-gray-800' : 'text-gray-400 line-through'}`}>
+                                {/* Bỏ gạch ngang nếu không Approved */}
+                                <span className={`text-sm font-bold ${isApprovedOrPending ? 'text-gray-900' : 'text-gray-500'}`}>
                                     {displayDuration} giờ
                                 </span>
                             </div>
