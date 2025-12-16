@@ -414,7 +414,7 @@ export default function AvailabilityScreen({ onBack }) {
                             {/* Time Input (24h) */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-[11px] font-bold text-gray-500 uppercase mb-1 block">Bận từ (24h)</label>
+                                    <label className="text-[11px] font-bold text-gray-500 uppercase mb-1 block">Bận từ</label>
                                     <input 
                                         type="time" 
                                         disabled={isLocked(editingDay.status)}
@@ -424,7 +424,7 @@ export default function AvailabilityScreen({ onBack }) {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[11px] font-bold text-gray-500 uppercase mb-1 block">Đến (24h)</label>
+                                    <label className="text-[11px] font-bold text-gray-500 uppercase mb-1 block">Đến</label>
                                     <input 
                                         type="time" 
                                         disabled={isLocked(editingDay.status)}
