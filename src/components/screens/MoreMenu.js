@@ -3,15 +3,50 @@ import {
   Briefcase, DollarSign, History, CalendarPlus, 
   Bell, ChevronRight, UserCircle, LogOut, Lock 
 } from 'lucide-react';
-import { getRoleBadgeStyle } from '../../utils/helpers'; 
+
+// --- HELPER (Nhúng trực tiếp để tránh lỗi import) ---
+const getRoleBadgeStyle = (role) => {
+    if (!role) return 'bg-gray-100 text-gray-700 border border-gray-200';
+    const normalizeRole = role.toLowerCase();
+    if (normalizeRole.includes('phục vụ')) return 'bg-orange-100 text-orange-700 border border-orange-200';
+    if (normalizeRole.includes('pha chế')) return 'bg-blue-100 text-blue-700 border border-blue-200';
+    if (normalizeRole.includes('thu ngân')) return 'bg-green-100 text-green-700 border border-green-200';
+    return 'bg-gray-100 text-gray-700 border border-gray-200';
+};
 
 export default function MoreMenu({ onNavigate, onLogout, user }) {
   const menuItems = [
-    { id: 'market', label: 'Kho ca làm', icon: <Briefcase size={20} className="text-blue-500" />, desc: 'Nhận thêm ca làm việc trống' },
-    { id: 'salary', label: 'Lương & Thưởng', icon: <DollarSign size={20} className="text-green-500" />, desc: 'Xem phiếu lương và lịch sử chi trả' },
-    { id: 'attendance', label: 'Lịch sử chấm công', icon: <History size={20} className="text-orange-500" />, desc: 'Kiểm tra giờ vào/ra ca làm' },
-    { id: 'availability', label: 'Đăng ký lịch rảnh', icon: <CalendarPlus size={20} className="text-purple-500" />, desc: 'Cập nhật thời gian có thể làm việc' },
-    { id: 'change-password', label: 'Đổi mật khẩu', icon: <Lock size={20} className="text-red-500" />, desc: 'Cập nhật mật khẩu đăng nhập' },
+    { 
+        id: 'market', 
+        label: 'Kho ca làm', 
+        icon: <Briefcase size={20} className="text-blue-500" />, 
+        desc: 'Nhận thêm ca làm việc trống' 
+    },
+    { 
+        id: 'salary', 
+        label: 'Lương & Thưởng', 
+        icon: <DollarSign size={20} className="text-green-500" />, 
+        desc: 'Xem phiếu lương và lịch sử chi trả' 
+    },
+    { 
+        // --- SỬA Ở ĐÂY: Đổi 'attendance' thành 'attendance-history' cho khớp với IPhone.js ---
+        id: 'attendance-history', 
+        label: 'Lịch sử chấm công', 
+        icon: <History size={20} className="text-orange-500" />, 
+        desc: 'Kiểm tra giờ vào/ra ca làm' 
+    },
+    { 
+        id: 'availability', 
+        label: 'Đăng ký lịch rảnh', 
+        icon: <CalendarPlus size={20} className="text-purple-500" />, 
+        desc: 'Cập nhật thời gian có thể làm việc' 
+    },
+    { 
+        id: 'change-password', 
+        label: 'Đổi mật khẩu', 
+        icon: <Lock size={20} className="text-red-500" />, 
+        desc: 'Cập nhật mật khẩu đăng nhập' 
+    },
   ];
 
   return (

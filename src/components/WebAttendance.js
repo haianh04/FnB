@@ -3,6 +3,7 @@ import {
   Search, Download, Edit, Check, X, 
   Clock, User, MapPin, Camera
 } from 'lucide-react';
+import NotificationDropdown from './WebNotification';
 
 /**
  * CẤU HÌNH & HÀM TIỆN ÍCH
@@ -329,9 +330,14 @@ const WebAttendance = () => {
     <div className="min-h-screen bg-gray-50 text-sm font-sans text-gray-800 p-4">
       {/* HEADER & STATS */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-          Quản Lý Chấm Công
-        </h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            Quản Lý Chấm Công
+          </h1>
+          {/* COMPONENT THÔNG BÁO Ở ĐÂY */}
+          <NotificationDropdown />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <StatCard 
             title="Đang làm việc" 

@@ -1,22 +1,30 @@
 import React, { useState, useMemo } from 'react';
 import { ArrowLeft, Calendar, Clock, Trash2, AlertTriangle, CheckCircle, XCircle, ChevronLeft, ChevronRight, Loader } from 'lucide-react';
-import { getRoleBadgeStyle } from '../../utils/helpers';
 
 // --- HELPERS ---
-
-// Tính giờ làm
-const getDurationNumber = (startTime, endTime) => {
-    if (!startTime || !endTime) return 0;
-    const [startH, startM] = startTime.split(':').map(Number);
-    const [endH, endM] = endTime.split(':').map(Number);
-    const startVal = startH * 60 + startM;
-    const endVal = endH * 60 + endM;
-    const diffMins = endVal - startVal;
-    if (diffMins < 0) return 0; 
-    return diffMins / 60; 
+const getRoleBadgeStyle = (role) => {
+    if (!role) return 'bg-gray-100 text-gray-700 border border-gray-200';
+    const normalizeRole = role.toLowerCase();
+    if (normalizeRole.includes('phục vụ')) return 'bg-orange-100 text-orange-700 border border-orange-200';
+    if (normalizeRole.includes('pha chế')) return 'bg-blue-100 text-blue-700 border border-blue-200';
+    if (normalizeRole.includes('thu ngân')) return 'bg-green-100 text-green-700 border border-green-200';
+    return 'bg-gray-100 text-gray-700 border border-gray-200';
 };
 
-// Lấy ngày đầu tuần (Thứ 2)
+const getDurationNumber = (startTime, endTime) => {
+    if (!startTime || !endTime) return 0;
+    try {
+        const [startH, startM] = startTime.split(':').map(Number);
+        const [endH, endM] = endTime.split(':').map(Number);
+        const startVal = startH * 60 + startM;
+        const endVal = endH * 60 + endM;
+        const diffMins = endVal - startVal;
+        return diffMins > 0 ? diffMins / 60 : 0;
+    } catch (e) {
+        return 0;
+    }
+};
+
 const getStartOfWeek = (date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -26,7 +34,6 @@ const getStartOfWeek = (date) => {
     return d;
 };
 
-// Format ngày hiển thị: "24 thg 11, 2025"
 const formatDateDisplay = (date) => {
     return `${date.getDate()} thg ${date.getMonth() + 1}, ${date.getFullYear()}`;
 };
@@ -35,7 +42,7 @@ const formatDateDisplay = (date) => {
 const MOCK_HISTORY = [
   { 
     id: 1, 
-    dateObj: new Date(2025, 10, 26), // 26/11 (Thứ 4)
+    dateObj: new Date(2025, 10, 26), 
     scheduledTime: "08:00 - 12:00",
     role: "Phục vụ",
     location: "CHÚ BI",
@@ -46,7 +53,7 @@ const MOCK_HISTORY = [
   },
   { 
     id: 2, 
-    dateObj: new Date(2025, 10, 25), // 25/11 (Thứ 3)
+    dateObj: new Date(2025, 10, 25), 
     scheduledTime: "13:30 - 17:30",
     role: "Pha chế",
     location: "CHÚ BI",
@@ -57,18 +64,18 @@ const MOCK_HISTORY = [
   },
   { 
     id: 99, 
-    dateObj: new Date(2025, 10, 27), // 27/11 (Thứ 5) - TEST PENDING
+    dateObj: new Date(2025, 10, 27),
     scheduledTime: "18:00 - 22:00", 
     role: "Phục vụ",
     location: "CHÚ BI",
     inTime: "18:00",
     outTime: "22:00",
-    status: "pending", // <--- TRẠNG THÁI MỚI
+    status: "pending", 
     exceptions: null
   },
   { 
     id: 3, 
-    dateObj: new Date(2025, 10, 23), // 23/11
+    dateObj: new Date(2025, 10, 23),
     scheduledTime: "18:00 - 22:00", 
     role: "Phục vụ",
     location: "CHÚ BI",
@@ -78,7 +85,7 @@ const MOCK_HISTORY = [
   },
   { 
     id: 4, 
-    dateObj: new Date(2025, 11, 1), // 01/12
+    dateObj: new Date(2025, 11, 1),
     scheduledTime: "08:00 - 16:00", 
     role: "Phục vụ",
     location: "CHÚ BI",
@@ -89,35 +96,37 @@ const MOCK_HISTORY = [
 ];
 
 export default function AttendanceHistoryScreen({ onBack }) {
-  // State: Tuần hiện tại (Mặc định tuần chứa ngày 26/11/2025)
-  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date(2025, 10, 26)));
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => getStartOfWeek(new Date(2025, 10, 26)));
 
-  // Tính ngày kết thúc tuần (Chủ nhật)
-  const currentWeekEnd = new Date(currentWeekStart);
-  currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
-  currentWeekEnd.setHours(23, 59, 59, 999);
+  const currentWeekEnd = useMemo(() => {
+      const end = new Date(currentWeekStart);
+      end.setDate(end.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      return end;
+  }, [currentWeekStart]);
 
-  // --- HANDLERS ---
   const handlePrevWeek = () => {
-      const newDate = new Date(currentWeekStart);
-      newDate.setDate(newDate.getDate() - 7);
-      setCurrentWeekStart(newDate);
+      setCurrentWeekStart(prev => {
+          const newDate = new Date(prev);
+          newDate.setDate(newDate.getDate() - 7);
+          return newDate;
+      });
   };
 
   const handleNextWeek = () => {
-      const newDate = new Date(currentWeekStart);
-      newDate.setDate(newDate.getDate() + 7);
-      setCurrentWeekStart(newDate);
+      setCurrentWeekStart(prev => {
+          const newDate = new Date(prev);
+          newDate.setDate(newDate.getDate() + 7);
+          return newDate;
+      });
   };
 
-  // --- FILTER DATA ---
   const filteredHistory = useMemo(() => {
       return MOCK_HISTORY.filter(item => {
           return item.dateObj >= currentWeekStart && item.dateObj <= currentWeekEnd;
       }).sort((a, b) => b.dateObj - a.dateObj);
   }, [currentWeekStart, currentWeekEnd]);
 
-  // --- HELPER FORMAT ---
   const formatDateBox = (date) => {
       const dayIndex = date.getDay(); 
       const dayLabel = dayIndex === 0 ? 'CN' : `THỨ ${dayIndex + 1}`;
@@ -126,10 +135,8 @@ export default function AttendanceHistoryScreen({ onBack }) {
       return { dayLabel, dateStr: `${d}/${m}` };
   };
 
-  // --- CALCULATE TOTAL ---
   const totalHours = useMemo(() => {
       const total = filteredHistory.reduce((acc, item) => {
-          // Tính tổng cho cả Approved và Pending
           if (item.status === 'approved' || item.status === 'pending') {
               return acc + getDurationNumber(item.inTime, item.outTime);
           }
@@ -139,20 +146,25 @@ export default function AttendanceHistoryScreen({ onBack }) {
   }, [filteredHistory]);
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F5F5] font-sans relative overflow-hidden">
+    // QUAN TRỌNG: Sử dụng 'absolute inset-0' để nó phủ kín cái khung iPhone
+    // 'z-50' để đảm bảo nó nằm trên các thành phần khác trong khung
+    <div className="absolute inset-0 z-50 flex flex-col bg-[#F5F5F5] font-sans">
       
-      {/* 1. HEADER */}
-      <div className="bg-white pt-12 pb-2 px-4 shadow-sm relative z-20 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
+      {/* HEADER */}
+      <div className="bg-white pt-2 pb-2 px-4 shadow-sm relative z-20 border-b border-gray-200 shrink-0">
+        <div className="flex items-center justify-between mb-4 mt-2">
             <div className="flex items-center gap-3">
-                <button onClick={onBack} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+                <button 
+                    onClick={onBack} 
+                    className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                >
                     <ArrowLeft size={20} className="text-gray-600"/>
                 </button>
                 <h1 className="text-[18px] font-bold text-gray-700">Lịch sử chấm công</h1>
             </div>
         </div>
 
-        {/* 2. TUẦN FILTER */}
+        {/* TUẦN FILTER */}
         <div className="flex items-center justify-between mb-4">
             <button onClick={handlePrevWeek} className="w-[36px] h-[36px] flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 active:scale-95 transition-all shadow-sm">
                 <ChevronLeft size={20}/>
@@ -169,7 +181,7 @@ export default function AttendanceHistoryScreen({ onBack }) {
             </button>
         </div>
 
-        {/* 3. USER INFO BAR */}
+        {/* USER INFO BAR */}
         <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-300">
@@ -185,32 +197,27 @@ export default function AttendanceHistoryScreen({ onBack }) {
         </div>
       </div>
 
-      {/* 4. LIST (SCROLLABLE) */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+      {/* LIST (SCROLLABLE) */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar pb-20">
         {filteredHistory.length > 0 ? (
             filteredHistory.map((item) => {
                 const { dayLabel, dateStr } = formatDateBox(item.dateObj);
-                
-                // Tính giờ hiển thị (cho cả Approved và Pending)
                 const hoursVal = (item.status === 'approved' || item.status === 'pending')
                     ? getDurationNumber(item.inTime, item.outTime) 
                     : 0;
                 const displayDuration = hoursVal.toFixed(2);
-                
-                // Logic style text: Pending vẫn hiện màu đậm như Approved
                 const isApprovedOrPending = item.status === 'approved' || item.status === 'pending';
 
                 return (
                     <div key={item.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex animate-in slide-in-from-bottom-2 fade-in duration-300">
-                        {/* Cột trái: Ngày */}
+                        {/* Cột trái */}
                         <div className="w-[85px] bg-[#E08C27] flex flex-col items-center justify-center text-white p-2 shrink-0 gap-1">
                             <span className="text-[13px] font-bold uppercase tracking-wide">{dayLabel}</span>
                             <span className="text-[15px] font-bold">{dateStr}</span>
                         </div>
 
-                        {/* Cột phải: Nội dung */}
+                        {/* Cột phải */}
                         <div className="flex-1 p-3 flex flex-col gap-2 relative">
-                            {/* Dòng 1: Thông tin ca */}
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center flex-wrap gap-2 text-[11px] text-gray-500">
                                     <Calendar size={12}/>
@@ -223,7 +230,6 @@ export default function AttendanceHistoryScreen({ onBack }) {
                                 </button>
                             </div>
 
-                            {/* Dòng 2: Giờ IN/OUT */}
                             <div className="flex items-center gap-4 text-sm font-bold mt-1">
                                 <div className="flex items-center gap-1 text-[#26A69A]">
                                     <Clock size={14}/> 
@@ -235,7 +241,6 @@ export default function AttendanceHistoryScreen({ onBack }) {
                                 </div>
                             </div>
 
-                            {/* Dòng 3: Cảnh báo */}
                             {item.exceptions && (
                                 <div className="flex items-center gap-1 text-[11px] text-orange-500 mt-1">
                                     <AlertTriangle size={12}/> 
@@ -243,9 +248,7 @@ export default function AttendanceHistoryScreen({ onBack }) {
                                 </div>
                             )}
 
-                            {/* Dòng 4: Trạng thái & Tổng giờ */}
                             <div className="flex items-center justify-end gap-3 mt-2 border-t border-gray-50 pt-2">
-                                {/* LOGIC BADGE TRẠNG THÁI */}
                                 {item.status === 'approved' ? (
                                     <span className="bg-[#E0F2F1] text-[#00695C] px-3 py-1 rounded-full text-[10px] font-bold border border-[#B2DFDB] flex items-center gap-1">
                                         <CheckCircle size={10}/> Quản lý đã duyệt
@@ -255,12 +258,10 @@ export default function AttendanceHistoryScreen({ onBack }) {
                                         <XCircle size={10}/> Không được duyệt
                                     </span>
                                 ) : (
-                                    // Trường hợp Pending
                                     <span className="bg-yellow-50 text-yellow-700 px-3 py-1 rounded-full text-[10px] font-bold border border-yellow-200 flex items-center gap-1">
                                         <Loader size={10} className="animate-spin"/> Đang chờ duyệt
                                     </span>
                                 )}
-                                {/* Bỏ gạch ngang nếu không Approved */}
                                 <span className={`text-sm font-bold ${isApprovedOrPending ? 'text-gray-900' : 'text-gray-500'}`}>
                                     {displayDuration} giờ
                                 </span>

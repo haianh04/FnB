@@ -1,7 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, XCircle, Loader, Lock, Clock, ChevronRight as IconArrow, Save, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, Clock, Save, Lock, XCircle, Loader, AlertCircle } from 'lucide-react';
 
-// --- HELPERS ---
+// ==========================================
+// 1. MOCK DATA
+// ==========================================
+const API_RESPONSE = {
+    "status": "success",
+    "message": "",
+    "data": [
+        {
+            "id": 37,
+            "registration_date": "2025-12-16T00:00:00.000Z",
+            "availability_type": "available",
+            "start_time": "08:00",
+            "end_time": "17:00",
+            "status": "pending",
+            "employee_note": null
+        },
+        // Ngày 18/12, 19/12, 20/12 sẽ được tự động điền trạng thái 'pending' theo logic "Cả tuần"
+        {
+            "id": 44,
+            "registration_date": "2025-12-23T00:00:00.000Z", // Data tuần sau
+            "availability_type": "unavailable",
+            "start_time": null,
+            "end_time": null,
+            "status": "pending",
+            "employee_note": "Đi học (08:00 - 12:00)"
+        },
+        {
+            "id": 38,
+            "registration_date": "2025-12-24T00:00:00.000Z", // Data tuần sau
+            "availability_type": "unavailable",
+            "start_time": null,
+            "end_time": null,
+            "status": "approved",
+            "employee_note": "Về quê (08:00 - 12:00)"
+        },
+        {
+            "id": 39,
+            "registration_date": "2025-12-25T00:00:00.000Z", // Data tuần sau
+            "availability_type": "unavailable",
+            "start_time": null,
+            "end_time": null,
+            "status": "rejected",
+            "employee_note": "Ốm (08:00 - 12:00)"
+        }
+    ]
+};
+
+const SUGGESTED_REASONS = ["Việc cá nhân", "Đi học", "Về quê", "Đám cưới", "Ốm", "Khác"];
+
+// ==========================================
+// 2. HELPERS
+// ==========================================
 const getStartOfWeek = (date) => {
     const d = new Date(date);
     const day = d.getDay();
@@ -11,7 +62,9 @@ const getStartOfWeek = (date) => {
     return monday;
 };
 
-const formatDateKey = (date) => date.toISOString().split('T')[0];
+const formatDateKey = (date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
 
 const addDays = (date, days) => {
     const result = new Date(date);
@@ -19,345 +72,410 @@ const addDays = (date, days) => {
     return result;
 };
 
-const formatWeekRange = (startDate, endDate) => {
-    const format = (date) => `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}, ${date.getFullYear()}`;
-    return `${format(startDate)} — ${format(endDate)}`;
-};
-
-const formatDayDisplay = (date) => {
-    return `${String(date.getDate()).padStart(2, '0')}`; 
-};
-
-// Mock Data
-const MOCK_DB = {
-    '2025-11-24': { 
-        id: 'week_2025_48',
-        status: 'pending', // Đang chờ duyệt, nhưng nếu Admin đóng thì vẫn bị khóa
-        days: {
-            '2025-11-24': { isFullDay: true }, 
-            '2025-11-25': { isFullDay: false, busyFrom: '18:00', busyTo: '22:00', reason: 'Đi học' },
-            '2025-11-26': { isFullDay: true },
-            '2025-11-27': { isFullDay: true },
-            '2025-11-28': { isFullDay: true },
-            '2025-11-29': { isFullDay: true },
-            '2025-11-30': { isFullDay: true },
-        }
+// Parse note: "Lý do (Start - End)" -> Đảm bảo format chuẩn
+const parseNoteInfo = (noteString) => {
+    if (!noteString) return { reason: '', from: '', to: '' };
+    // Regex bắt format 24h: 08:00 - 17:00
+    const regex = /^(.*?)\s*\((\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})\)$/;
+    const match = noteString.match(regex);
+    if (match) {
+        return { reason: match[1].trim(), from: match[2], to: match[3] };
     }
+    return { reason: noteString, from: '', to: '' };
 };
 
 export default function AvailabilityScreen({ onBack }) {
-  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date(2025, 10, 24)));
-  const [weekData, setWeekData] = useState({ status: 'new', days: {} });
-  const [editingDay, setEditingDay] = useState(null); 
-  
-  // --- STATE GIẢ LẬP ADMIN: QUẢN LÝ ĐÓNG/MỞ ĐĂNG KÝ ---
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false); // Mặc định là ĐÓNG để bạn test ngay
+  const [currentWeekStart, setCurrentWeekStart] = useState(getStartOfWeek(new Date(2025, 11, 15))); 
+  const [weekData, setWeekData] = useState({}); 
+  const [editingDay, setEditingDay] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // --- TRANSFORM API DATA & AUTO-FILL MISSING DAYS ---
+  const transformApiToState = (apiData, weekStart) => {
+      const mapped = {};
+      let weekStatus = null; 
+
+      // Xác định khoảng thời gian của tuần hiện tại để lọc data
+      const weekEnd = addDays(weekStart, 6);
+      const startStr = formatDateKey(weekStart);
+      const endStr = formatDateKey(weekEnd);
+
+      // 1. Duyệt data từ API để tìm trạng thái chung của tuần NÀY
+      apiData.forEach(record => {
+          const dateKey = record.registration_date.split('T')[0];
+          
+          // Chỉ xét status của các record nằm trong tuần hiện tại
+          if (dateKey >= startStr && dateKey <= endStr) {
+              if (!weekStatus && record.status !== 'new') {
+                  weekStatus = record.status;
+              }
+          }
+
+          let dayConfig = {
+              id: record.id,
+              status: record.status,
+              availability_type: record.availability_type,
+              manager_note: record.manager_note
+          };
+
+          if (record.availability_type === 'available') {
+              dayConfig.isFullDay = true; 
+              dayConfig.busyFrom = '08:00';
+              dayConfig.busyTo = '17:00';
+          } else {
+              const parsed = parseNoteInfo(record.employee_note);
+              dayConfig.isFullDay = false;
+              dayConfig.reason = parsed.reason;
+              dayConfig.busyFrom = parsed.from;
+              dayConfig.busyTo = parsed.to;
+          }
+          mapped[dateKey] = dayConfig;
+      });
+
+      // 2. Logic "Gửi cả tuần": Nếu tuần này đã có trạng thái (pending/approved...)
+      // thì LẤP ĐẦY các ngày còn thiếu bằng trạng thái đó (Mặc định Rảnh)
+      if (weekStatus) {
+          for (let i = 0; i < 7; i++) {
+              const d = addDays(weekStart, i);
+              const key = formatDateKey(d);
+              if (!mapped[key]) {
+                  mapped[key] = {
+                      status: weekStatus, // Thừa hưởng status (Đã đăng ký)
+                      availability_type: 'available',
+                      isFullDay: true,
+                      busyFrom: '08:00',
+                      busyTo: '17:00',
+                      isImplicit: true
+                  };
+              }
+          }
+      }
+
+      return mapped;
+  };
 
   useEffect(() => {
-      const key = formatDateKey(currentWeekStart);
-      const savedWeek = MOCK_DB[key];
-
-      if (savedWeek) {
-          setWeekData(savedWeek);
-      } else {
-          const defaultDays = {};
-          for (let i = 0; i < 7; i++) {
-              const d = addDays(currentWeekStart, i);
-              defaultDays[formatDateKey(d)] = { isFullDay: true, reason: 'Bận việc cá nhân' };
-          }
-          setWeekData({ status: 'new', days: defaultDays });
-      }
+      setLoading(true);
+      setTimeout(() => {
+          const transformed = transformApiToState(API_RESPONSE.data, currentWeekStart);
+          setWeekData(transformed);
+          setLoading(false);
+      }, 500);
   }, [currentWeekStart]);
 
   // --- HANDLERS ---
   const handlePrevWeek = () => setCurrentWeekStart(addDays(currentWeekStart, -7));
   const handleNextWeek = () => setCurrentWeekStart(addDays(currentWeekStart, 7));
+  const currentWeekEnd = addDays(currentWeekStart, 6);
+  const formatWeekRange = (start, end) => `${start.getDate()}/${start.getMonth()+1} — ${end.getDate()}/${end.getMonth()+1}`;
 
-  // --- LOGIC KHÓA QUAN TRỌNG ---
-  // Khóa khi: (Trạng thái là Approved)
-  const isLocked = weekData.status === 'approved';
+  const isLocked = (status) => status === 'approved' || status === 'rejected';
 
   const handleOpenEdit = (dateStr, dayLabel) => {
-      // Vẫn cho mở modal để xem (View-only) nhưng disable input
-      const currentConfig = weekData.days[dateStr] || { isFullDay: true, reason: 'Bận việc cá nhân' };
-      setEditingDay({ dateStr, dayLabel, ...currentConfig });
+      setErrorMsg('');
+      const currentConfig = weekData[dateStr] || { 
+          availability_type: 'available', 
+          isFullDay: true, 
+          status: 'new',
+          busyFrom: '08:00',
+          busyTo: '17:00',
+          reason: ''
+      };
+      
+      setEditingDay({ 
+          dateStr, 
+          dayLabel, 
+          ...currentConfig
+      });
   };
 
-  const handleSaveDay = () => {
-      if (isLocked) return; // Chặn lưu nếu khóa
-      
-      const busyFromVal = editingDay.busyFrom || '08:00';
-      const busyToVal = editingDay.busyTo || '17:00';
-      const reasonVal = editingDay.reason || 'Bận việc cá nhân';
+  const handleReasonClick = (reason) => {
+      setEditingDay(prev => ({ ...prev, reason: reason === "Khác" ? "" : reason }));
+      if (reason !== "Khác") setErrorMsg('');
+  };
+
+  const handleConfirmEdit = () => {
+      // Validation bắt buộc cho trường hợp BẬN
+      if (!editingDay.isFullDay) {
+          if (!editingDay.reason || editingDay.reason.trim() === '') {
+              setErrorMsg('Vui lòng chọn hoặc nhập lý do bận');
+              return;
+          }
+          if (!editingDay.busyFrom || !editingDay.busyTo) {
+             setErrorMsg('Vui lòng nhập đầy đủ thời gian bận');
+             return;
+          }
+      }
+
+      // Prepare Data
+      let type = editingDay.isFullDay ? 'available' : 'unavailable';
+      const finalFrom = editingDay.isFullDay ? '08:00' : editingDay.busyFrom;
+      const finalTo = editingDay.isFullDay ? '17:00' : editingDay.busyTo;
 
       setWeekData(prev => ({
           ...prev,
-          days: {
-              ...prev.days,
-              [editingDay.dateStr]: {
-                  isFullDay: editingDay.isFullDay,
-                  busyFrom: busyFromVal,
-                  busyTo: busyToVal,
-                  reason: reasonVal,
-                  note: editingDay.note
-              }
+          [editingDay.dateStr]: {
+              ...prev[editingDay.dateStr],
+              status: 'new', // Đánh dấu local change
+              availability_type: type,
+              isFullDay: editingDay.isFullDay,
+              reason: editingDay.reason,
+              busyFrom: finalFrom,
+              busyTo: finalTo,
           }
       }));
       setEditingDay(null);
   };
 
-  const handleSubmitWeek = () => {
-      if (isLocked) return;
-      setWeekData(prev => ({ ...prev, status: 'pending' }));
-      alert("Gửi thành công!");
+  const handleSendWeekRegistration = () => {
+      const newWeekData = { ...weekData };
+      let hasChanges = false;
+
+      // Logic: Khi gửi, quét toàn bộ tuần
+      // 1. Những ngày 'new' (user vừa sửa) -> Giữ nguyên, chuyển status 'pending'
+      // 2. Những ngày chưa có data (trống) -> Tự điền Rảnh, status 'pending'
+      // 3. Những ngày đã có status cũ -> Giữ nguyên (hoặc update lại thành pending tuỳ logic BE)
+
+      for (let i = 0; i < 7; i++) {
+          const date = addDays(currentWeekStart, i);
+          const dateKey = formatDateKey(date);
+          const existingData = newWeekData[dateKey];
+
+          if (!existingData || existingData.status === 'new') {
+              hasChanges = true;
+              newWeekData[dateKey] = {
+                  ...existingData,
+                  status: 'pending', 
+                  availability_type: existingData?.availability_type || 'available',
+                  isFullDay: existingData?.isFullDay !== false, 
+                  busyFrom: existingData?.busyFrom || '08:00',
+                  busyTo: existingData?.busyTo || '17:00'
+              };
+          }
+      }
+
+      if (hasChanges) {
+        setWeekData(newWeekData);
+        alert("Đã gửi đăng ký cho cả tuần!");
+      } else {
+        alert("Tuần này đã được gửi duyệt rồi.");
+      }
   };
 
-  const currentWeekEnd = addDays(currentWeekStart, 6);
-  const isPending = weekData.status === 'pending'; 
-
-  const getStatusBadge = () => {
-      // Ưu tiên hiển thị trạng thái ĐÓNG của hệ thống trước
-      
-      switch(weekData.status) {
-          case 'approved': return <div className="flex items-center gap-1 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200"><CheckCircle size={12}/> Đã duyệt</div>;
-          case 'pending': return <div className="flex items-center gap-1 bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold border border-yellow-200"><Loader size={12}/> Chờ duyệt</div>;
-          case 'rejected': return <div className="flex items-center gap-1 bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold border border-red-200"><XCircle size={12}/> Từ chối</div>;
-          default: return null;
+  // --- RENDERERS ---
+  const renderStatusBadge = (status) => {
+      switch (status) {
+          case 'approved': return <span className="text-[10px] font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded border border-green-200 flex items-center gap-1"><CheckCircle size={10}/> Đã duyệt</span>;
+          case 'rejected': return <span className="text-[10px] font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded border border-red-200 flex items-center gap-1"><XCircle size={10}/> Từ chối</span>;
+          case 'pending': return <span className="text-[10px] font-bold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded border border-yellow-200 flex items-center gap-1"><Clock size={10}/> Chờ duyệt</span>;
+          default: return <span className="text-[10px] text-gray-400">Chưa đăng ký</span>;
       }
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#F5F5F5] font-sans relative overflow-hidden">
+    <div className="flex flex-col h-full bg-[#F5F5F5] font-sans relative">
       
-      {/* 1. HEADER */}
-      <div className="bg-white pt-12 pb-3 px-4 shadow-sm relative z-20 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
-            <button onClick={onBack} className="w-9 h-9 flex items-center justify-center -ml-1 hover:bg-gray-50 rounded-full transition-colors">
-                <ArrowLeft size={22} className="text-gray-800"/>
-            </button>
-            <h1 className="text-[17px] font-bold text-gray-900">Lịch rảnh theo tuần</h1>
-        </div>
-        {getStatusBadge()}
+      {/* Header */}
+      <div className="bg-white pt-12 pb-3 px-4 shadow-sm flex items-center gap-2 sticky top-0 z-20">
+        <button onClick={onBack}><ArrowLeft size={22} className="text-gray-700"/></button>
+        <h1 className="text-[17px] font-bold text-gray-900">Đăng ký lịch làm việc</h1>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
-        
-        {/* 2. WEEK FILTER */}
-        <div className="bg-white p-4 mb-4 border-b border-gray-200 sticky top-0 z-10 shadow-[0_4px_12px_rgba(0,0,0,0.03)]">
-            <div className="flex items-center justify-between bg-gray-50 rounded-xl p-1 border border-gray-100">
-                <button onClick={handlePrevWeek} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:bg-white hover:shadow-sm rounded-lg transition-all active:scale-95">
-                    <ChevronLeft size={20}/>
-                </button>
-                
-                <span className="text-[13px] font-bold text-gray-800 tracking-tight">
-                    {formatWeekRange(currentWeekStart, currentWeekEnd)}
-                </span>
-                
-                <button onClick={handleNextWeek} className="w-10 h-10 flex items-center justify-center text-gray-500 hover:bg-white hover:shadow-sm rounded-lg transition-all active:scale-95">
-                    <ChevronRight size={20}/>
-                </button>
+      <div className="flex-1 overflow-y-auto pb-24 no-scrollbar">
+        {/* Navigator */}
+        <div className="bg-white p-3 mb-3 border-b border-gray-100">
+            <div className="flex justify-between items-center bg-gray-50 rounded-xl p-1 border border-gray-200">
+                <button onClick={handlePrevWeek} className="p-2 text-gray-500 active:text-orange-500"><ChevronLeft size={20}/></button>
+                <span className="font-bold text-sm text-gray-800">{formatWeekRange(currentWeekStart, currentWeekEnd)}</span>
+                <button onClick={handleNextWeek} className="p-2 text-gray-500 active:text-orange-500"><ChevronRight size={20}/></button>
             </div>
-            
-            {/* THÔNG BÁO KHÓA (Logic hiển thị theo điều kiện khóa) */}
-            {isLocked && (
-                <div className={`mt-3 flex items-start justify-center gap-2 text-xs font-medium py-2 px-3 rounded-lg border 
-                    ${!isRegistrationOpen ? 'bg-red-50 text-red-700 border-red-100' : 'bg-green-50 text-green-700 border-green-100'}
-                `}>
-                    {!isRegistrationOpen ? <AlertTriangle size={14} className="shrink-0"/> : <Lock size={14} className="shrink-0"/>}
-                    <span>
-                        {!isRegistrationOpen 
-                            ? "Quản lý đã đóng đợt đăng ký này." 
-                            : "Lịch này đã được duyệt. Bạn không thể chỉnh sửa."}
-                    </span>
-                </div>
-            )}
         </div>
 
-        {/* 3. DANH SÁCH NGÀY */}
+        {/* List Days */}
         <div className="px-4 space-y-3">
-            {[0, 1, 2, 3, 4, 5, 6].map((offset) => {
+            {loading ? <div className="text-center py-10"><Loader className="animate-spin mx-auto text-gray-400"/></div> : 
+            [0, 1, 2, 3, 4, 5, 6].map((offset) => {
                 const date = addDays(currentWeekStart, offset);
                 const dateKey = formatDateKey(date);
-                const dayConfig = weekData.days[dateKey] || { isFullDay: true }; 
-                
+                const data = weekData[dateKey] || { status: 'new', availability_type: 'available', isFullDay: true, busyFrom: '08:00', busyTo: '17:00' };
+                const isUnavailable = data.availability_type === 'unavailable';
                 const dayLabels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-                const dayIndex = date.getDay();
-                const label = dayLabels[dayIndex];
-                const isToday = formatDateKey(new Date()) === dateKey;
+                const label = dayLabels[date.getDay()];
 
-                const borderClass = dayConfig.isFullDay 
-                    ? 'border-l-4 border-l-green-500' 
-                    : 'border-l-4 border-l-red-500';
+                let borderClass = 'border-l-orange-300';
+                if (data.status === 'approved') borderClass = 'border-l-green-500';
+                else if (data.status === 'rejected') borderClass = 'border-l-red-500';
+                else if (data.status === 'pending') borderClass = 'border-l-yellow-400';
 
                 return (
                     <div 
                         key={dateKey}
                         onClick={() => handleOpenEdit(dateKey, `${label}, ${date.getDate()}/${date.getMonth() + 1}`)}
-                        className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-center gap-4 relative overflow-hidden transition-all
-                            ${isLocked ? 'opacity-60 cursor-default' : 'cursor-pointer active:scale-[0.99] hover:border-orange-200'}
-                            ${borderClass}
-                        `}
-                    >   
-                        {/* Cột Trái: Ngày */}
+                        className={`bg-white p-4 rounded-xl border border-gray-100 border-l-4 ${borderClass} shadow-sm flex items-center gap-3 active:scale-[0.98] transition-all relative overflow-hidden`}
+                    >
+                        {isLocked(data.status) && <div className="absolute right-2 top-2"><Lock size={14} className="text-gray-300"/></div>}
                         <div className="flex flex-col items-center min-w-[45px]">
-                            <span className={`text-[11px] font-bold uppercase ${isToday ? 'text-[#E08C27]' : 'text-gray-400'}`}>
-                                {label.split(' ')[0] === 'Thứ' ? label.replace('Thứ ', 'T') : label}
-                            </span>
-                            <span className={`text-[17px] font-bold ${isToday ? 'text-[#E08C27]' : 'text-gray-800'}`}>
-                                {formatDayDisplay(date)}
-                            </span>
+                            <span className="text-[10px] font-bold uppercase text-black-500">{label}</span>
+                            <span className="text-lg font-bold text-black-600">{date.getDate()}</span>
                         </div>
-
-                        {/* Cột Giữa: Nội dung */}
-                        <div className="flex-1 border-l border-gray-100 pl-4 py-1">
-                            {dayConfig.isFullDay ? (
+                        <div className="flex-1 pl-3 border-l border-gray-100">
+                            <div className="flex justify-between items-center mb-1">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                    <span className="text-sm font-bold text-gray-700">Rảnh cả ngày</span>
+                                    <div className={`w-2.5 h-2.5 rounded-full ${!isUnavailable ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                    <span className={`text-sm font-bold ${!isUnavailable ? 'text-green-700' : 'text-red-600'}`}>
+                                        {data.status === 'new' ? 'Chưa đăng ký' : (!isUnavailable ? 'Rảnh' : 'Bận')}
+                                    </span>
                                 </div>
-                            ) : (
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1.5">
-                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                        <span className="text-sm font-bold text-gray-800">Có giờ bận</span>
-                                    </div>
-                                    
-                                    <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 w-fit px-2.5 py-1 rounded-md border border-gray-100">
-                                        <Clock size={12} className="text-gray-400"/>
-                                        <span className="font-mono font-bold">
-                                            {dayConfig.busyFrom || '08:00'} - {dayConfig.busyTo || '17:00'}
-                                        </span>
-                                    </div>
-                                    
-                                    {dayConfig.reason && (
-                                        <p className="text-[11px] text-gray-400 mt-1 italic line-clamp-1">Lý do: {dayConfig.reason}</p>
-                                    )}
-                                </div>
+                                {renderStatusBadge(data.status)}
+                            </div>
+                            
+                            <div className="mt-1 flex flex-col gap-0.5">
+                                {/* Hiển thị lý do nếu Bận */}
+                                {isUnavailable && <span className="text-xs font-medium text-gray-800">{data.reason}</span>}
+                                
+                                {/* HIỂN THỊ GIỜ BẬN: Luôn hiển thị nếu là Unavailable (kể cả chưa gửi) */}
+                                {isUnavailable && (
+                                    <span className="text-[10px] text-gray-500 bg-gray-50 w-fit px-1.5 py-0.5 rounded font-mono">
+                                        {data.busyFrom} - {data.busyTo}
+                                    </span>
+                                )}
+                            </div>
+
+                            {data.status === 'rejected' && data.manager_note && (
+                                <p className="text-[10px] text-red-500 mt-1 bg-red-50 p-1 rounded">Note: {data.manager_note}</p>
                             )}
                         </div>
-
-                        {/* Cột Phải: Icon */}
-                        {!isLocked ? <IconArrow size={18} className="text-gray-300"/> : <Lock size={16} className="text-gray-300"/>}
                     </div>
                 );
             })}
         </div>
       </div>
 
-      {/* 4. FOOTER: Chỉ hiện nút Gửi khi CHƯA KHÓA */}
-      {!isLocked && (
-          <div className="absolute bottom-0 w-full bg-white border-t border-gray-100 p-4 pb-8 z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-              <button 
-                onClick={handleSubmitWeek}
-                className="w-full py-3.5 bg-[#E08C27] text-white font-bold rounded-xl shadow-lg shadow-orange-200 active:scale-95 transition-transform flex items-center justify-center gap-2"
-              >
-                  <Save size={18}/> 
-                  {isPending ? 'Cập nhật lại đăng ký' : 'Gửi đăng ký tuần này'}
-              </button>
-          </div>
-      )}
+      {/* Footer */}
+      <div className="bg-white p-4 border-t border-gray-100 shadow-lg z-30">
+        <button onClick={handleSendWeekRegistration} className="w-full py-3.5 bg-[#E08C27] text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+            <Save size={18} /> Gửi đăng ký
+        </button>
+      </div>
 
-      {/* 5. MODAL CHỈNH SỬA (READ-ONLY KHI KHÓA) */}
+      {/* Modal Edit */}
       {editingDay && (
         <div className="absolute inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[2px]" onClick={() => setEditingDay(null)}>
-            <div className="bg-white w-full rounded-t-[24px] p-5 animate-in slide-in-from-bottom duration-300" onClick={e => e.stopPropagation()}>
-                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+            <div className="bg-white w-full rounded-t-[24px] p-5 animate-in slide-in-from-bottom duration-300 flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 shrink-0"></div>
                 
-                <div className="flex justify-between items-start mb-6">
+                {/* Modal Header */}
+                <div className="flex justify-between mb-4 shrink-0">
                     <div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-1">{editingDay.dayLabel}</h3>
-                        <p className="text-sm text-gray-500">
-                            {isLocked ? "Chi tiết đăng ký (Chỉ xem)" : "Cập nhật thời gian rảnh của bạn"}
-                        </p>
+                        <h3 className="text-lg font-bold text-gray-900">{editingDay.dayLabel}</h3>
+                        <p className="text-xs text-gray-500">{isLocked(editingDay.status) ? 'Đã được xử lý (Không thể sửa)' : 'Cập nhật trạng thái'}</p>
                     </div>
-                    {isLocked && (
-                        <div className="bg-red-50 text-red-600 px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1 border border-red-100">
-                            <Lock size={12}/> Locked
+                    {renderStatusBadge(editingDay.status)}
+                </div>
+
+                <div className="overflow-y-auto flex-1 no-scrollbar pb-4">
+                    {errorMsg && (
+                        <div className="mb-4 bg-red-50 text-red-600 text-xs font-bold p-3 rounded-xl flex items-center gap-2 border border-red-100 animate-in fade-in slide-in-from-top-1">
+                            <AlertCircle size={14}/> {errorMsg}
+                        </div>
+                    )}
+
+                    {/* Switch Available/Unavailable */}
+                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl mb-4 border border-gray-100">
+                        <div>
+                            <span className="font-bold text-sm block">Đăng ký Rảnh</span>
+                            <span className="text-xs text-gray-500">Rảnh cả ngày (08:00 - 17:00)</span>
+                        </div>
+                        <button 
+                            disabled={isLocked(editingDay.status)}
+                            onClick={() => {
+                                const newIsFullDay = !editingDay.isFullDay;
+                                setEditingDay({
+                                    ...editingDay, 
+                                    isFullDay: newIsFullDay,
+                                    reason: newIsFullDay ? '' : editingDay.reason
+                                });
+                                setErrorMsg('');
+                            }}
+                            className={`w-12 h-7 rounded-full p-1 transition-colors relative 
+                                ${editingDay.isFullDay ? 'bg-green-500' : 'bg-gray-300'}
+                                ${isLocked(editingDay.status) ? 'opacity-50 cursor-not-allowed' : ''}
+                            `}
+                        >
+                            <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${editingDay.isFullDay ? 'translate-x-5' : ''}`}></div>
+                        </button>
+                    </div>
+
+                    {/* Form Input: Chỉ hiện khi BẬN */}
+                    {!editingDay.isFullDay && (
+                        <div className="space-y-5 animate-in fade-in slide-in-from-top-2">
+                            
+                            {/* Time Input (24h) */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-[11px] font-bold text-gray-500 uppercase mb-1 block">Bận từ (24h)</label>
+                                    <input 
+                                        type="time" 
+                                        disabled={isLocked(editingDay.status)}
+                                        value={editingDay.busyFrom || ''} 
+                                        onChange={(e) => setEditingDay({...editingDay, busyFrom: e.target.value})} 
+                                        className="w-full p-3 border rounded-xl font-bold text-center outline-none focus:border-orange-500 bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[11px] font-bold text-gray-500 uppercase mb-1 block">Đến (24h)</label>
+                                    <input 
+                                        type="time" 
+                                        disabled={isLocked(editingDay.status)}
+                                        value={editingDay.busyTo || ''} 
+                                        onChange={(e) => setEditingDay({...editingDay, busyTo: e.target.value})} 
+                                        className="w-full p-3 border rounded-xl font-bold text-center outline-none focus:border-orange-500 bg-white"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Suggested Reasons Chips */}
+                            <div>
+                                <label className="text-[11px] font-bold text-gray-500 uppercase mb-2 block">Lý do bận <span className="text-red-500">*</span></label>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {SUGGESTED_REASONS.map(r => (
+                                        <button
+                                            key={r}
+                                            disabled={isLocked(editingDay.status)}
+                                            onClick={() => handleReasonClick(r)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors
+                                                ${editingDay.reason === r ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-200 hover:border-orange-300'}
+                                            `}
+                                        >
+                                            {r}
+                                        </button>
+                                    ))}
+                                </div>
+                                <input 
+                                    type="text" 
+                                    disabled={isLocked(editingDay.status)}
+                                    placeholder="Nhập lý do cụ thể..." 
+                                    value={editingDay.reason || ''} 
+                                    onChange={(e) => {
+                                        setEditingDay({...editingDay, reason: e.target.value});
+                                        if(e.target.value) setErrorMsg('');
+                                    }} 
+                                    className={`w-full p-3 border rounded-xl outline-none focus:border-orange-500 transition-colors ${errorMsg ? 'border-red-500 bg-red-50' : 'border-gray-200'}`}
+                                />
+                            </div>
                         </div>
                     )}
                 </div>
 
-                {/* Form Toggle Full Day */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl mb-4 border border-gray-100">
-                    <div>
-                        <span className="text-sm font-bold text-gray-900 block">Rảnh cả ngày</span>
-                        <span className="text-xs text-gray-500">Tắt nếu bạn có giờ bận</span>
-                    </div>
-                    <button 
-                        disabled={isLocked}
-                        onClick={() => setEditingDay({...editingDay, isFullDay: !editingDay.isFullDay})}
-                        className={`w-[48px] h-[28px] rounded-full p-[2px] transition-colors duration-300 relative 
-                            ${editingDay.isFullDay ? 'bg-[#34C759]' : 'bg-gray-300'}
-                            ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}
-                        `}
-                    >
-                        <div className={`w-[24px] h-[24px] bg-white rounded-full shadow-sm transition-transform duration-300 ${editingDay.isFullDay ? 'translate-x-[20px]' : 'translate-x-0'}`}></div>
-                    </button>
-                </div>
-
-                {/* Form Giờ Bận */}
-                {!editingDay.isFullDay && (
-                    <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Bận từ</label>
-                                <input 
-                                    type="time" 
-                                    disabled={isLocked}
-                                    value={editingDay.busyFrom || '08:00'}
-                                    onChange={(e) => setEditingDay({...editingDay, busyFrom: e.target.value})}
-                                    className="w-full p-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-orange-500 text-center disabled:bg-gray-100 disabled:text-gray-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Đến</label>
-                                <input 
-                                    type="time" 
-                                    disabled={isLocked}
-                                    value={editingDay.busyTo || '17:00'}
-                                    onChange={(e) => setEditingDay({...editingDay, busyTo: e.target.value})}
-                                    className="w-full p-3 bg-white border border-gray-200 rounded-xl font-bold text-gray-900 outline-none focus:border-orange-500 text-center disabled:bg-gray-100 disabled:text-gray-500"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-[11px] font-bold text-gray-500 mb-1.5 uppercase tracking-wide">Lý do</label>
-                            <select 
-                                disabled={isLocked}
-                                value={editingDay.reason || 'Bận việc cá nhân'}
-                                onChange={(e) => setEditingDay({...editingDay, reason: e.target.value})}
-                                className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none text-sm font-medium disabled:bg-gray-100 disabled:text-gray-500"
-                            >
-                                <option>Bận việc cá nhân</option>
-                                <option>Đi học</option>
-                                <option>Về quê</option>
-                                <option>Khác</option>
-                            </select>
-                        </div>
-                    </div>
-                )}
-
-                {/* Nút Xác nhận chỉ hiện khi chưa khóa */}
-                {!isLocked ? (
-                    <button 
-                        onClick={handleSaveDay}
-                        className="w-full py-3.5 bg-[#191919] text-white font-bold rounded-xl mt-6 active:scale-95 transition-transform"
-                    >
-                        Xác nhận
-                    </button>
+                {!isLocked(editingDay.status) ? (
+                    <button onClick={handleConfirmEdit} className="w-full py-3.5 bg-[#191919] text-white font-bold rounded-xl active:scale-95 transition-transform shrink-0">Xác nhận</button>
                 ) : (
-                    <button 
-                        onClick={() => setEditingDay(null)}
-                        className="w-full py-3.5 bg-gray-100 text-gray-600 font-bold rounded-xl mt-6 active:scale-95 transition-transform"
-                    >
-                        Đóng
-                    </button>
+                    <button onClick={() => setEditingDay(null)} className="w-full py-3.5 bg-gray-100 text-gray-600 font-bold rounded-xl active:scale-95 transition-transform shrink-0">Đóng</button>
                 )}
             </div>
         </div>
       )}
-
     </div>
   );
 }
