@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Search, Download, Edit, Check, X, 
-  Clock, User, MapPin, Camera
+  Clock, User, MapPin
 } from 'lucide-react';
-import NotificationDropdown from './WebNotification';
 
 /**
  * CẤU HÌNH & HÀM TIỆN ÍCH
  */
 const getRoleBadgeStyle = (roleName) => {
-  const role = roleName.toUpperCase();
+  const role = roleName ? roleName.toUpperCase() : "";
   if (role.includes("PHỤC VỤ")) return "bg-orange-50 text-orange-600 border-orange-200"; 
   if (role.includes("PHA CHẾ")) return "bg-blue-50 text-blue-600 border-blue-200"; 
   if (role.includes("THU NGÂN")) return "bg-green-50 text-green-600 border-green-200"; 
   if (role.includes("BẢO VỆ")) return "bg-yellow-50 text-yellow-600 border-yellow-200"; 
-  return "bg-gray-400"; 
+  return "bg-gray-100 text-gray-600 border-gray-200"; 
 };
 
 const CONFIG = {
@@ -54,7 +53,9 @@ const WebAttendance = () => {
       shiftEnd: '17:00',
       checkIn: '07:55',
       checkOut: '17:30',
-      breakTime: 60,
+      breakStart: '12:00',
+      breakEnd: '13:00',
+      breakType: 'unpaid',
       checkInImage: 'https://via.placeholder.com/150',
       status: 'approved',
       isAutoCheckout: false,
@@ -70,9 +71,11 @@ const WebAttendance = () => {
       hourlyRate: 35000,
       shiftStart: '08:00',
       shiftEnd: '17:00',
-      checkIn: '08:15', // Đi muộn 15p
+      checkIn: '08:15',
       checkOut: '17:00',
-      breakTime: 60,
+      breakStart: '12:00',
+      breakEnd: '13:00',
+      breakType: 'unpaid',
       checkInImage: 'https://via.placeholder.com/150',
       status: 'pending',
       isAutoCheckout: false,
@@ -89,10 +92,12 @@ const WebAttendance = () => {
       shiftStart: '14:00',
       shiftEnd: '22:00',
       checkIn: '14:00',
-      checkOut: '23:00', // OT 1 tiếng
-      breakTime: 30,
+      checkOut: '23:00',
+      breakStart: '18:00',
+      breakEnd: '18:30',
+      breakType: 'unpaid',
       checkInImage: 'https://via.placeholder.com/150',
-      status: 'rejected', // Đã bị từ chối
+      status: 'rejected',
       isAutoCheckout: false, 
       note: 'Check-in sai vị trí',
       location: 'Cơ sở 2',
@@ -108,7 +113,9 @@ const WebAttendance = () => {
       shiftEnd: '17:00',
       checkIn: '08:00',
       checkOut: '17:00',
-      breakTime: 60,
+      breakStart: '12:00',
+      breakEnd: '13:00',
+      breakType: 'paid',
       checkInImage: 'https://via.placeholder.com/150',
       status: 'approved',
       isAutoCheckout: false,
@@ -126,9 +133,11 @@ const WebAttendance = () => {
       shiftEnd: '23:00',
       checkIn: null,
       checkOut: null,
-      breakTime: 0,
+      breakStart: null,
+      breakEnd: null,
+      breakType: 'unpaid',
       checkInImage: null,
-      status: 'missing', // Vắng
+      status: 'missing',
       isAutoCheckout: false,
       note: '',
       location: 'Cơ sở 1',
@@ -144,10 +153,12 @@ const WebAttendance = () => {
       shiftEnd: '14:00',
       checkIn: '06:00',
       checkOut: '15:00',
-      breakTime: 30,
+      breakStart: '11:00',
+      breakEnd: '11:30',
+      breakType: 'unpaid',
       checkInImage: 'https://via.placeholder.com/150',
       status: 'pending',
-      isAutoCheckout: true, // Auto checkout
+      isAutoCheckout: true,
       note: 'Quên checkout',
       location: 'Cơ sở 1',
     }
@@ -168,7 +179,7 @@ const WebAttendance = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [viewingImage, setViewingImage] = useState(null);
 
-  // --- 2. LOGIC TÍNH TOÁN ---
+  // --- 2. LOGIC TÍNH TOÁN (ĐÃ CẬP NHẬT GHI CHÚ THEO CÔNG THỨC) ---
   
   const calculateRowData = (item) => {
     // Nếu vắng
@@ -181,38 +192,84 @@ const WebAttendance = () => {
         missingMinutes: 0,
         standardHours: 0,
         otHours: 0,
+        breakDurationMinutes: 0,
         estimatedSalary: 0
       };
     }
 
+    // Quy đổi hết ra phút
     const shiftStart = timeToMinutes(item.shiftStart);
     const shiftEnd = timeToMinutes(item.shiftEnd);
     const checkIn = timeToMinutes(item.checkIn);
     const checkOut = timeToMinutes(item.checkOut);
-    const breakTime = item.breakTime || 0;
 
+    // ==========================================
+    // 1. TÍNH GIỜ NGHỈ (Break_Time)
+    // ==========================================
+    // Break_Time = breakEnd - breakStart
+    const breakStartMin = timeToMinutes(item.breakStart);
+    const breakEndMin = timeToMinutes(item.breakEnd);
+    
+    let breakDurationMinutes = 0;
+    if (item.breakStart && item.breakEnd && breakEndMin > breakStartMin) {
+      breakDurationMinutes = breakEndMin - breakStartMin;
+    } else {
+      breakDurationMinutes = item.breakTime || 0;
+    }
+
+    // Xử lý loại nghỉ (Paid/Unpaid)
+    // - Nếu breakType là Có lương: = 0 (Không trừ)
+    // - Nếu breakType là Không lương: = Break_Time (Trừ thẳng vào giờ làm)
+    const deductibleBreakMinutes = item.breakType === 'paid' ? 0 : breakDurationMinutes;
+
+    // ==========================================
+    // 2. TÍNH SỐ GIỜ LÀM THEO LỊCH (Scheduled)
+    // ==========================================
+    // Giờ bắt đầu - Giờ kết thúc (Theo lịch)
     const scheduledHours = (shiftEnd - shiftStart) / 60;
 
+    // ==========================================
+    // 3. TÍNH THIẾU (Missing = Late + Early)
+    // ==========================================
+    // Đi trễ: IF (Real_CheckIn > Shift_Start) THEN ... ELSE 0
     const late = Math.max(0, checkIn - shiftStart - CONFIG.ALLOWED_LATE_MINUTES);
+    
+    // Về sớm: IF (Real_CheckOut < Shift_End) THEN ... ELSE 0
     const early = Math.max(0, shiftEnd - checkOut - CONFIG.ALLOWED_EARLY_MINUTES);
+    
     const missingMinutes = late + early;
 
+    // ==========================================
+    // 4. TÍNH GIỜ CÔNG (Standard Hours)
+    // ==========================================
+    // B1. Xác định thời điểm bắt đầu (T_Start) = MAX(Real_CheckIn, Shift_Start)
     const effectiveStart = Math.max(checkIn, shiftStart);
+    
+    // B2. Xác định thời điểm kết thúc (T_End) = MIN(Real_CheckOut, Shift_End)
     const effectiveEndStandard = Math.min(checkOut, shiftEnd);
     
-    let standardMinutes = Math.max(0, effectiveEndStandard - effectiveStart - breakTime);
+    // B3. Tính toán = MAX(0, T_End - T_Start - Break_Time_Deductible)
+    let standardMinutes = Math.max(0, effectiveEndStandard - effectiveStart - deductibleBreakMinutes);
     const standardHours = standardMinutes / 60;
 
+    // ==========================================
+    // 5. TÍNH GIỜ OT
+    // ==========================================
+    // IF (Real_CheckOut > Shift_End) THEN Real_CheckOut - Shift_End ELSE 0
     let otMinutes = 0;
     if (checkOut > shiftEnd) {
       otMinutes = checkOut - shiftEnd;
     }
     const otHours = otMinutes / 60;
 
+    // ==========================================
+    // 6. TÍNH LƯƠNG DỰ KIẾN
+    // ==========================================
+    // (Giờ công + Giờ OT) x Lương/giờ
     const totalPaidHours = standardHours + otHours;
     let estimatedSalary = totalPaidHours * item.hourlyRate;
 
-    // QUY TẮC: Nếu trạng thái là 'rejected' thì lương bằng 0
+    // Nếu bị từ chối thì lương = 0
     if (item.status === 'rejected') {
       estimatedSalary = 0;
     }
@@ -225,6 +282,7 @@ const WebAttendance = () => {
       missingMinutes,
       standardHours,
       otHours,
+      breakDurationMinutes,
       estimatedSalary
     };
   };
@@ -267,11 +325,9 @@ const WebAttendance = () => {
 
   // --- 4. ACTIONS ---
 
-  // Xử lý nút Duyệt / Từ chối
   const handleStatusChange = (id, newStatus) => {
     setAttendanceData(prev => prev.map(item => {
       if (item.id !== id) return item;
-      // Nếu bấm lại vào trạng thái đang chọn -> Reset về pending
       const nextStatus = item.status === newStatus ? 'pending' : newStatus;
       return { ...item, status: nextStatus };
     }));
@@ -279,7 +335,7 @@ const WebAttendance = () => {
 
   const handleApproveAll = () => {
     const idsToApprove = filteredData
-      .filter(i => i.checkIn && i.checkOut && i.status !== 'rejected') // Không duyệt những cái đã bị từ chối
+      .filter(i => i.checkIn && i.checkOut && i.status !== 'rejected')
       .map(i => i.id);
       
     setAttendanceData(prev => prev.map(item => 
@@ -294,31 +350,30 @@ const WebAttendance = () => {
     setEditingItem(null);
   };
 
-  // Logic màu nền cho dòng
   const getRowStyleInfo = (row) => {
     if (row.status === 'rejected') {
       return {
-        rowClass: 'bg-gray-100 text-gray-400', // Xám toàn bộ
-        stickyBg: 'bg-gray-100', // Cột sticky cũng xám
+        rowClass: 'bg-gray-100 text-gray-400',
+        stickyBg: 'bg-gray-100',
         isRejected: true
       };
     }
     if (!row.checkIn) {
       return {
-        rowClass: 'bg-red-50 hover:bg-red-100', // Đỏ nhạt
+        rowClass: 'bg-red-50 hover:bg-red-100',
         stickyBg: 'bg-red-50',
         isRejected: false
       };
     }
     if (row.isAutoCheckout) {
       return {
-        rowClass: 'bg-yellow-50 hover:bg-yellow-100', // Vàng nhạt
+        rowClass: 'bg-yellow-50 hover:bg-yellow-100',
         stickyBg: 'bg-yellow-50',
         isRejected: false
       };
     }
     return {
-      rowClass: 'hover:bg-gray-50', // Mặc định
+      rowClass: 'hover:bg-gray-50',
       stickyBg: 'bg-white',
       isRejected: false
     };
@@ -327,15 +382,13 @@ const WebAttendance = () => {
   // --- RENDER ---
 
   return (
-    <div className="min-h-screen bg-gray-50 text-sm font-sans text-gray-800 p-4">
+    <div className="min-h-screen bg-gray-50 text-sm font-sans text-gray-800 p-4 flex flex-col">
       {/* HEADER & STATS */}
-      <div className="mb-6">
+      <div className="mb-6 flex-shrink-0">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             Quản Lý Chấm Công
           </h1>
-          {/* COMPONENT THÔNG BÁO Ở ĐÂY */}
-          <NotificationDropdown />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -364,7 +417,7 @@ const WebAttendance = () => {
       </div>
 
       {/* FILTER */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-4 border border-gray-200">
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-4 border border-gray-200 flex-shrink-0">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
           <div className="lg:col-span-2 flex gap-2">
             <div className="flex-1">
@@ -424,27 +477,31 @@ const WebAttendance = () => {
       </div>
 
       {/* DATA TABLE */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-240px)]"> 
+        <div className="overflow-auto relative flex-1"> 
           <table className="w-full whitespace-nowrap">
-            <thead className="bg-gray-100 text-gray-600 font-semibold text-xs uppercase tracking-wider">
+            <thead className="bg-gray-100 text-gray-600 font-semibold text-xs uppercase tracking-wider sticky top-0 z-30 shadow-sm">
               <tr>
-                <th className="p-3 text-left border-r sticky left-0 z-20 bg-gray-100 w-[100px] min-w-[100px]">Thời gian</th>
-                <th className="p-3 text-left border-r sticky left-[100px] z-20 bg-gray-100 min-w-[150px]">Tên nhân viên</th>
-                <th className="p-3 text-left">Bộ phận</th>
-                <th className="p-3 text-left ">Vai trò</th>
-                <th className="p-3 text-right">Lương/h</th>
-                <th className="p-3 text-center">Ca làm việc</th>
-                <th className="p-3 text-center bg-blue-50">Thực tế</th>
-                <th className="p-3 text-right text-red-600">Thiếu</th>
-                <th className="p-3 text-right">Giờ công</th>
-                <th className="p-3 text-right text-purple-600">Giờ OT</th>
-                <th className="p-3 text-right">Giờ nghỉ</th>
-                <th className="p-3 text-right bg-green-50 font-bold text-green-700">Lương dự kiến</th>
-                <th className="p-3 text-left min-w-[150px]">Ghi chú</th>
-                <th className="p-3 text-center">Trạng thái</th>
-                <th className="p-3 text-center sticky right-0 bg-gray-100 z-10 border-l min-w-[100px]">Duyệt</th>
-                <th className="p-3 text-center sticky right-0 bg-gray-100 z-10 border-l">Sửa</th>
+                <th className="p-3 text-left border-r sticky left-0 top-0 z-50 bg-gray-100 w-[100px] min-w-[100px]">Thời gian</th>
+                <th className="p-3 text-left border-r sticky left-[100px] top-0 z-50 bg-gray-100 min-w-[150px]">Tên nhân viên</th>
+                
+                <th className="p-3 text-left sticky top-0 z-30 bg-gray-100">Bộ phận</th>
+                <th className="p-3 text-left sticky top-0 z-30 bg-gray-100">Vai trò</th>
+                <th className="p-3 text-right sticky top-0 z-30 bg-gray-100">Lương/h</th>
+                <th className="p-3 text-center sticky top-0 z-30 bg-gray-100">Ca làm việc</th>
+                <th className="p-3 text-center bg-blue-50 sticky top-0 z-30">Thực tế</th>
+                <th className="p-3 text-right text-red-600 sticky top-0 z-30 bg-gray-100">Thiếu</th>
+                <th className="p-3 text-right sticky top-0 z-30 bg-gray-100">Giờ công</th>
+                <th className="p-3 text-right text-purple-600 sticky top-0 z-30 bg-gray-100">Giờ OT</th>
+                
+                <th className="p-3 text-right sticky top-0 z-30 bg-gray-100">Giờ nghỉ</th>
+                
+                <th className="p-3 text-right bg-green-50 font-bold text-green-700 sticky top-0 z-30">Lương dự kiến</th>
+                <th className="p-3 text-left min-w-[150px] sticky top-0 z-30 bg-gray-100">Ghi chú</th>
+                <th className="p-3 text-center sticky top-0 z-30 bg-gray-100">Trạng thái</th>
+                
+                <th className="p-3 text-center sticky right-0 top-0 bg-gray-100 z-50 border-l min-w-[100px]">Duyệt</th>
+                <th className="p-3 text-center sticky right-0 top-0 bg-gray-100 z-50 border-l">Sửa</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -454,19 +511,16 @@ const WebAttendance = () => {
                 return (
                   <tr key={row.id} className={`transition-colors ${rowClass}`}>
                     
-                    {/* Cột 1 Sticky: Thời gian */}
                     <td className={`p-3 sticky left-0 z-20 border-r font-medium ${stickyBg}`}>
                       {row.date}
                     </td>
                     
-                    {/* Cột 2 Sticky: Tên nhân viên - ĐÃ BỎ line-through */}
                     <td className={`p-3 sticky left-[100px] z-20 border-r font-medium ${stickyBg}`}>
                       {row.employeeName}
                     </td>
                     
                     <td className="p-3">{row.department}</td>
                     
-                    {/* Vai trò với badge màu */ }
                     <td className="p-3">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isRejected ? 'bg-gray-200 text-gray-500' : getRoleBadgeStyle(row.role)}`}>
                         {row.role}
@@ -495,19 +549,36 @@ const WebAttendance = () => {
                         <span className="text-red-500 italic text-xs font-semibold">Vắng</span>
                       )}
                     </td>
+
+                    {/* Cột Thiếu: Chỉ hiện giờ, bỏ dòng phút phụ */}
                     <td className="p-3 text-right">
-                    {/* Quy đổi thiếu phút thành giờ */}
-                    <div>{formatDecimal(row.missingMinutes / 60)}h</div>
                       {row.missingMinutes > 0 ? (
-                        <span className={!isRejected ? 'text-red-600 font-bold' : ''}>-{row.missingMinutes}p</span>
-                      ) : '-'}
+                        <span className={!isRejected ? 'text-red-600 font-bold' : ''}>
+                          {formatDecimal(row.missingMinutes / 60)}h
+                        </span>
+                      ) : (
+                        <span>-</span>
+                      )}
                     </td>
+
                     <td className="p-3 text-right font-medium">{formatDecimal(row.standardHours)}h</td>
                     <td className="p-3 text-right font-medium text-purple-700">{formatDecimal(row.otHours)}h</td>
-                    {/* Quy dổi phút nghỉ thành giờ */}
-                    <td className="p-3 text-right text-gray-500">{formatDecimal(row.breakTime / 60)}h</td>
                     
-                    {/* Lương dự kiến - Logic 0đ nếu Rejected, ĐÃ BỎ line-through */}
+                    <td className="p-3 text-right text-gray-500">
+                      {row.breakStart && row.breakEnd ? (
+                        <>
+                          <div className="font-medium text-gray-700 text-xs">
+                            {row.breakStart} - {row.breakEnd}
+                          </div>
+                          <div className={`text-[11px] ${row.breakType === 'paid' ? 'text-green-600 font-semibold' : 'opacity-80'}`}>
+                             ({formatDecimal(row.breakDurationMinutes / 60)}h {row.breakType === 'paid' ? 'Có lương' : ''})
+                          </div>
+                        </>
+                      ) : (
+                         <span>{row.breakDurationMinutes > 0 ? `${formatDecimal(row.breakDurationMinutes / 60)}h` : '-'}</span>
+                      )}
+                    </td>
+                    
                     <td className={`p-3 text-right font-bold ${isRejected ? 'text-gray-400' : 'bg-green-50/50 text-green-700'}`}>
                       {formatCurrency(row.estimatedSalary)}
                     </td>
@@ -520,10 +591,8 @@ const WebAttendance = () => {
                       <StatusBadge status={row.status} />
                     </td>
                     
-                    {/* Cột Hành động: Check & Cross */}
-                    <td className={`p-3 sticky right-0 z-10 border-l text-center ${stickyBg}`}>
+                    <td className={`p-3 sticky right-0 z-20 border-l text-center ${stickyBg}`}>
                       <div className="flex items-center justify-center gap-2">
-                        {/* Nút Approve */}
                         <button 
                           onClick={() => handleStatusChange(row.id, 'approved')}
                           className={`p-1 sticky right-0 rounded-full border transition-all ${
@@ -532,12 +601,11 @@ const WebAttendance = () => {
                               : 'bg-white border-gray-200 text-gray-300 hover:border-green-300 hover:text-green-500'
                           }`}
                           title="Chấp nhận"
-                          disabled={!row.checkIn} // Vắng thì không cho duyệt
+                          disabled={!row.checkIn}
                         >
                           <Check className="w-4 h-4" strokeWidth={3} />
                         </button>
 
-                        {/* Nút Reject */}
                         <button 
                           onClick={() => handleStatusChange(row.id, 'rejected')}
                           className={`p-1 sticky right-0 rounded-full border transition-all ${
@@ -553,7 +621,7 @@ const WebAttendance = () => {
                       </div>
                     </td>
 
-                    <td className={`p-3 sticky right-0 z-10 border-l text-center w-[50px] ${stickyBg}`}>
+                    <td className={`p-3 sticky right-0 z-20 border-l text-center w-[50px] ${stickyBg}`}>
                       <button 
                           onClick={() => setEditingItem(row)}
                           className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded" 
@@ -604,8 +672,7 @@ const WebAttendance = () => {
   );
 };
 
-// ... Các component phụ ...
-
+// ... Các Component phụ (StatCard, FilterSelect, StatusBadge) giữ nguyên ...
 const StatCard = ({ title, value, color, icon, desc }) => (
   <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-start justify-between">
     <div>
@@ -658,8 +725,58 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+// Component chọn giờ tùy chỉnh (24h)
+const TimeSelect24h = ({ value, onChange, name }) => {
+  const [hStr, mStr] = (value || '00:00').split(':');
+  
+  // Tạo mảng 00-23 và 00-59
+  const hours = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0'));
+  const minutes = Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0'));
+
+  const handleHourChange = (e) => {
+    const newH = e.target.value;
+    const currentM = mStr || '00';
+    onChange({ target: { name, value: `${newH}:${currentM}` } });
+  };
+
+  const handleMinuteChange = (e) => {
+    const newM = e.target.value;
+    const currentH = hStr || '00';
+    onChange({ target: { name, value: `${currentH}:${newM}` } });
+  };
+
+  return (
+    <div className="flex gap-1 items-center">
+      <div className="relative w-full">
+        <select 
+          value={hStr || '00'} 
+          onChange={handleHourChange} 
+          className="w-full appearance-none border rounded px-2 py-2 text-sm bg-white pr-6 focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+          {hours.map(h => <option key={h} value={h}>{h}</option>)}
+        </select>
+      </div>
+      <span className="font-bold text-gray-400">:</span>
+      <div className="relative w-full">
+        <select 
+          value={mStr || '00'} 
+          onChange={handleMinuteChange} 
+          className="w-full appearance-none border rounded px-2 py-2 text-sm bg-white pr-6 focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+          {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+      </div>
+    </div>
+  );
+};
+
 const EditModal = ({ item, onClose, onSave }) => {
-  const [formData, setFormData] = useState({ ...item });
+  const [formData, setFormData] = useState({ 
+    ...item,
+    breakStart: item.breakStart || '',
+    breakEnd: item.breakEnd || '',
+    breakType: item.breakType || 'unpaid' 
+  });
 
   const handleChange = (e) => {
     const { name, value, type } = e.target;
@@ -698,35 +815,56 @@ const EditModal = ({ item, onClose, onSave }) => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Giờ vào</label>
-              <input 
-                type="time" 
-                name="checkIn"
-                value={formData.checkIn || ''}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+              <TimeSelect24h 
+                name="checkIn" 
+                value={formData.checkIn} 
+                onChange={handleChange} 
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Giờ ra</label>
-              <input 
-                type="time" 
-                name="checkOut"
-                value={formData.checkOut || ''}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+              <TimeSelect24h 
+                name="checkOut" 
+                value={formData.checkOut} 
+                onChange={handleChange} 
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nghỉ (phút)</label>
-              <input 
-                type="number" 
-                name="breakTime"
-                value={formData.breakTime}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-              />
+            
+            <div className="col-span-2 border-t pt-4 mt-2">
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-3">Giờ nghỉ</label>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Nghỉ từ</label>
+                  <TimeSelect24h 
+                    name="breakStart" 
+                    value={formData.breakStart} 
+                    onChange={handleChange} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Đến</label>
+                  <TimeSelect24h 
+                    name="breakEnd" 
+                    value={formData.breakEnd} 
+                    onChange={handleChange} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Loại</label>
+                  <select 
+                    name="breakType"
+                    value={formData.breakType}
+                    onChange={handleChange}
+                    className="w-full border rounded px-2 py-2 text-sm bg-white h-[38px]"
+                  >
+                    <option value="unpaid">Không lương</option>
+                    <option value="paid">Có lương</option>
+                  </select>
+                </div>
+              </div>
             </div>
-            <div className="col-span-2">
+
+            <div className="col-span-2 mt-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
               <textarea 
                 name="note"
