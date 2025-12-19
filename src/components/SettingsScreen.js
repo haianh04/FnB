@@ -204,10 +204,15 @@ const GeneralTab = () => {
   );
 };
 
-// === TAB 2: QUY ĐỊNH CHẤM CÔNG ===
+// === TAB 2: QUY ĐỊNH CHẤM CÔNG (CẬP NHẬT TRẠNG THÁI HOẠT ĐỘNG) ===
 const AttendanceTab = () => {
   const [strictMode, setStrictMode] = useState(true);
   const [autoBreak, setAutoBreak] = useState(false);
+
+  // -- STATE MỚI ĐỂ THAO TÁC --
+  const [autoCheckoutTime, setAutoCheckoutTime] = useState("04:00");
+  const [registerDay, setRegisterDay] = useState("Thứ 5");
+  const [registerTime, setRegisterTime] = useState("17:00");
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-300">
@@ -217,7 +222,7 @@ const AttendanceTab = () => {
         </h3>
         <div className="space-y-4">
             <h4 className="text-sm font-bold text-gray-900 uppercase">Check-in</h4>
-            <InputField label="Giới hạn check-in sớm" type="number" value="15" unit="Phút" min="0" note="Nút Check-in chỉ sáng lên trước giờ vào ca 15 phút." />
+            <InputField label="Giới hạn check-in sớm" type="number" value="15" unit="Phút" min="0" note="Nút Check-in chỉ sáng lên trước giờ vào ca 15 phút." onChange={()=>{}} />
             <div className="flex items-start justify-between bg-orange-50 p-3 rounded-md border border-orange-100">
                 <div className="pr-4">
                     <span className="block text-sm font-medium text-orange-900">Quy tắc tính giờ bắt đầu</span>
@@ -225,11 +230,23 @@ const AttendanceTab = () => {
                 </div>
                 <ToggleSwitch checked={strictMode} onChange={setStrictMode} />
             </div>
-            <InputField label="Số phút đi trễ (Cho phép)" type="number" value="5" unit="Phút" min="0" note="Đi trễ < 5p vẫn tính là đúng giờ." />
+            <InputField label="Số phút đi trễ (Cho phép)" type="number" value="5" unit="Phút" min="0" note="Đi trễ < 5p vẫn tính là đúng giờ." onChange={()=>{}} />
         </div>
         <div className="border-t pt-4 space-y-4">
             <h4 className="text-sm font-bold text-gray-900 uppercase">Check-out</h4>
-            <InputField label="Số phút về sớm (Cho phép)" type="number" value="5" unit="Phút" min="0" note="Về sớm < 5p không bị phạt." />
+            <InputField label="Số phút về sớm (Cho phép)" type="number" value="5" unit="Phút" min="0" note="Về sớm < 5p không bị phạt." onChange={()=>{}} />
+            
+            {/* THAY ĐỔI: Có thể nhập liệu Thời gian check out tự động */}
+            <div>
+              <InputField 
+                  label="Check-out tự động" 
+                  type="time" 
+                  value={autoCheckoutTime} 
+                  onChange={(e) => setAutoCheckoutTime(e.target.value)}
+                  note="Hệ thống tự động đóng ca và highlight vàng nhạt."
+              />
+            </div>
+
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Làm tròn giờ</label>
                 <select className="block w-full rounded-md border-gray-300 py-2 px-3 border text-sm focus:border-[#F97316] outline-none">
@@ -247,13 +264,47 @@ const AttendanceTab = () => {
                 <ToggleSwitch checked={autoBreak} onChange={setAutoBreak} />
             </div>
             <div className={`space-y-4 transition-all ${autoBreak ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
-                <InputField label="Điều kiện áp dụng (Ca >)" type="number" value="6" unit="Giờ" min="0" />
-                <InputField label="Thời gian trừ" type="number" value="30" unit="Phút" min="0" note="Tự động trừ vào tổng công."/>
+                <InputField label="Điều kiện áp dụng (Ca >)" type="number" value="6" unit="Giờ" min="0" onChange={()=>{}} />
+                <InputField label="Thời gian trừ" type="number" value="30" unit="Phút" min="0" note="Tự động trừ vào tổng công." onChange={()=>{}}/>
             </div>
         </div>
+
+        {/* THAY ĐỔI: Có thể chọn Thứ và Giờ cho Hạn đăng ký */}
+        <div className="bg-white p-5 rounded-lg border shadow-sm">
+            <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Đăng ký Lịch làm</h3>
+            <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Hạn chốt đăng ký (Hàng tuần)</label>
+                <div className="flex gap-3">
+                    <select 
+                        value={registerDay}
+                        onChange={(e) => setRegisterDay(e.target.value)}
+                        className="block w-1/2 rounded-md border-gray-300 py-2 px-3 border text-sm focus:border-[#F97316] outline-none bg-white"
+                    >
+                        <option>Thứ 2</option>
+                        <option>Thứ 3</option>
+                        <option>Thứ 4</option>
+                        <option>Thứ 5</option>
+                        <option>Thứ 6</option>
+                        <option>Thứ 7</option>
+                        <option>Chủ nhật</option>
+                    </select>
+                    <input 
+                        type="time" 
+                        value={registerTime}
+                        onChange={(e) => setRegisterTime(e.target.value)}
+                        className="block w-1/2 rounded-md border-gray-300 py-2 px-3 border focus:border-[#F97316] sm:text-sm outline-none" 
+                    />
+                </div>
+                <p className="mt-2 text-xs text-gray-500 flex items-start gap-1">
+                  <Info size={12} className="mt-0.5 shrink-0"/> 
+                  Đến {registerTime} {registerDay} hàng tuần, hệ thống sẽ khóa đăng ký.
+                </p>
+            </div>
+        </div>
+
         <div className="bg-white p-5 rounded-lg border shadow-sm">
             <h3 className="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Nghỉ phép</h3>
-            <InputField label="Deadline gửi đơn xin nghỉ" type="number" value="2" unit="Ngày trước" min="1" note="Gửi muộn hơn hệ thống sẽ cảnh báo." />
+            <InputField label="Deadline gửi đơn xin nghỉ" type="number" value="2" unit="Ngày trước" min="1" note="Gửi muộn hơn hệ thống sẽ cảnh báo." onChange={()=>{}} />
         </div>
       </div>
     </div>
@@ -286,15 +337,15 @@ const PayrollTab = () => {
                 <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                     <Wallet className="text-[#F97316]" size={20} /> Hệ số & Phạt
                 </h3>
-                <InputField label="Hệ số lương OT" type="number" value="1.5" unit="x" min="1.0" note="150% lương cơ bản." />
-                <InputField label="Hệ số phạt Đi trễ / Về sớm" type="number" value="1.0" unit="x" min="0" note="(Phút vi phạm - Cho phép) * Lương * Hệ số." />
+                <InputField label="Hệ số lương OT" type="number" value="1.5" unit="x" min="1.0" note="150% lương cơ bản." onChange={()=>{}} />
+                <InputField label="Hệ số phạt Đi trễ / Về sớm" type="number" value="1.0" unit="x" min="0" note="(Phút vi phạm - Cho phép) * Lương * Hệ số." onChange={()=>{}} />
             </div>
 
             <div className="bg-white p-5 rounded-lg border shadow-sm md:col-span-2">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Phúc lợi & Phụ cấp</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <InputField label="Nghỉ phép năm" type="number" value="12" unit="Ngày/Năm" min="0" note="Chỉ áp dụng cho nhân viên Lương Tháng." />
+                        <InputField label="Nghỉ phép năm" type="number" value="12" unit="Ngày/Năm" min="0" note="Chỉ áp dụng cho nhân viên Lương Tháng." onChange={()=>{}} />
                     </div>
                     
                     {/* Phụ cấp Inline */}
