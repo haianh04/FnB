@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 // Import các components
 import IPhone from './components/IPhone'; 
-import WebEmploymentHistory from './components/WebEmploymentHistory';
+import WebEmploymentHistory from './components/WebEmployment';
 import SettingsScreen from './components/SettingsScreen';
 import WebSchedule from './components/WebSchedule';
 import WebAvailability from './components/WebAvailability';
@@ -20,7 +20,7 @@ function App() {
     { id: 'schedule', label: 'Quản lý Lịch', icon: <Calendar size={20} /> },
     { id: 'availability', label: 'Duyệt lịch rảnh', icon: <Clock size={20} /> },
     { id: 'attendance', label: 'Chấm công', icon: <ClipboardList size={20} /> },
-    { id: 'salary', label: 'Lương & Hồ sơ', icon: <DollarSign size={20} /> },
+    { id: 'salary', label: 'Nhân viên', icon: <DollarSign size={20} /> },
     { id: 'settings', label: 'Cài đặt hệ thống', icon: <Settings size={20} /> },
   ];
 
