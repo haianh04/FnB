@@ -788,17 +788,6 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-700 mb-2 font-medium">Bộ phận</label>
-                    <input type="text" value={editedEmployee.department} onChange={(e) => setEditedEmployee({ ...editedEmployee, department: e.target.value })} placeholder="Bếp" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
-                  </div>
-                  <div>
-                    <label className="block text-gray-700 mb-2 font-medium">Vị trí (Vai trò)</label>
-                    <input type="text" value={editedEmployee.position} onChange={(e) => setEditedEmployee({ ...editedEmployee, position: e.target.value })} placeholder="Bếp trưởng" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
-                  </div>
-                </div>
-
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div>
                     <label className="block text-gray-700 mb-2 font-medium">Ngày sinh</label>
