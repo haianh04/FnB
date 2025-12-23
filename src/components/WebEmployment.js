@@ -25,171 +25,181 @@ import {
   Filter
 } from 'lucide-react';
 
-// --- MOCK DATA ---
+// --- MOCK DATA (Đã đổi tên trường khớp với Database Schema) ---
 
 const mockEmployees = [
   {
+    // Bảng: hr_employee
     id: '1',
     name: 'Quỳnh Châu',
-    email: 'cquynh585@gmail.com',
-    dob: '1995-05-12',
-    startDate: '2023-01-15', // Thêm ngày bắt đầu
-    base: 'Cơ sở 1',
-    department: 'Bếp nóng',
-    position: 'Bếp thịt',
+    work_email: 'cquynh585@gmail.com',     // Old: email
+    work_base: 'Cơ sở 1',                  // Old: base
     status: 'active',
-    avatar: 'Q',
+    avatar_url: 'Q',                       // Old: avatar
+    
+    // Bảng: job_roles (Thông tin hiển thị)
+    department: 'Bếp nóng',
+    job_role_name: 'Bếp thịt',             // Old: position
+    
+    // Bảng: employee_profiles
+    birthday: '1995-05-12',                // Old: dob
+    hire_date: '2023-01-15',               // Old: startDate
     phone: '0912345678',
     cccd: '001234567890',
-    address: '123 Đường ABC, 1, TP.HCM',
-    emergencyContactName: 'Nguyễn Văn A',
-    emergencyContactPhone: '0987654321'
+    location: '123 Đường ABC, 1, TP.HCM',  // Old: address (Map vào location của profile)
+    emergency_contact_name: 'Nguyễn Văn A', // Old: emergencyContactName
+    emergency_contact_phone: '0987654321'   // Old: emergencyContactPhone
   },
   {
     id: '2',
     name: 'Phạm Văn Huy',
-    email: 'huyhoangbt773@gmail.com',
-    dob: '1998-08-20',
-    startDate: '2023-03-01', // Thêm ngày bắt đầu
-    base: 'Cơ sở 2',
+    work_email: 'huyhoangbt773@gmail.com',
+    birthday: '1998-08-20',
+    hire_date: '2023-03-01',
+    work_base: 'Cơ sở 2',
     department: 'Bếp nóng',
-    position: 'Bếp thịt',
+    job_role_name: 'Bếp thịt',
     status: 'active',
-    avatar: 'P',
+    avatar_url: 'P',
     phone: '0923456789',
     cccd: '001234567891',
-    address: '456 Đường DEF, 2, TP.HCM'
+    location: '456 Đường DEF, 2, TP.HCM'
   },
   {
     id: '3',
     name: 'Nguyễn Thị Quỳnh Chi',
-    email: 'chintq12996@gmail.com',
-    dob: '1996-02-14',
-    startDate: '2022-06-10', // Thêm ngày bắt đầu
-    base: 'Văn phòng chính',
+    work_email: 'chintq12996@gmail.com',
+    birthday: '1996-02-14',
+    hire_date: '2022-06-10',
+    work_base: 'Văn phòng chính',
     department: 'Nhân sự',
-    position: 'HR',
+    job_role_name: 'HR',
     status: 'inactive',
-    avatar: 'N',
+    avatar_url: 'N',
     phone: '0934567890',
-    deactivationDate: '2025-11-15',
-    deactivationReason: 'Nhân viên xin nghỉ việc',
-    deactivationNote: 'Đã bàn giao công việc.'
+    
+    // Thông tin nghỉ việc (hr_employee)
+    deactivation_date: '2025-11-15',      // Old: deactivationDate
+    deactivation_reason: 'Nhân viên xin nghỉ việc', // Old: deactivationReason
+    deactivation_note: 'Đã bàn giao công việc.'     // Old: deactivationNote
   },
   {
     id: '4',
     name: 'Thế Anh',
-    email: 'theanhntp21@gmail.com',
-    dob: '2000-11-01',
-    startDate: '2024-01-05', // Thêm ngày bắt đầu
-    base: 'Cơ sở 1',
+    work_email: 'theanhntp21@gmail.com',
+    birthday: '2000-11-01',
+    hire_date: '2024-01-05',
+    work_base: 'Cơ sở 1',
     department: 'Thu ngân',
-    position: 'Thu ngân',
+    job_role_name: 'Thu ngân',
     status: 'active',
-    avatar: 'T',
+    avatar_url: 'T',
     phone: '0945678901',
     cccd: '001234567893'
   }
 ];
 
+// Map với bảng mới: hr_allowance_definition
 const mockAllowancesData = [
   {
     id: '1',
     name: 'Phụ cấp ăn trưa',
     type: 'ngày',
-    condition: 'Làm việc hơn 6 giờ/ngày',
-    amount: 30000,
-    isActive: true
+    condition_text: 'Làm việc hơn 6 giờ/ngày', // Old: condition
+    default_amount: 30000,                     // Old: amount
+    active: true                               // Old: isActive
   },
   {
     id: '2',
     name: 'Phụ cấp xăng xe',
     type: 'tháng',
-    condition: 'Nhân viên giao hàng',
-    amount: 500000,
-    isActive: true
+    condition_text: 'Nhân viên giao hàng',
+    default_amount: 500000,
+    active: true
   },
   {
     id: '3',
     name: 'Phụ cấp bảo hiểm',
     type: 'tháng',
-    condition: 'Làm hơn 20 ngày/tháng',
-    amount: 500000,
-    isActive: false
+    condition_text: 'Làm hơn 20 ngày/tháng',
+    default_amount: 500000,
+    active: false
   },
   {
     id: '4',
     name: 'Phụ cấp điện thoại',
     type: 'tháng',
-    condition: 'Gọi hơn 100 phút/tháng',
-    amount: 100000,
-    isActive: false
+    condition_text: 'Gọi hơn 100 phút/tháng',
+    default_amount: 100000,
+    active: false
   }
 ];
 
+// Map với bảng: payroll_payslips
 const mockSalaryPeriods = [
   {
     id: '1',
-    period: 'Tháng 12/2025',
-    payDate: '05/12/2025',
-    base: 0,
-    bonusPenalty: 0,
-    actualPay: 0,
+    period_name: 'Tháng 12/2025',  // Old: period
+    payment_date: '05/12/2025',    // Old: payDate
+    base_wage: 0,                  // Old: base
+    adjustment: 0,                 // Old: bonusPenalty (có thể tách ra bonus/penalty riêng nếu cần)
+    net_wage: 0,                   // Old: actualPay
     status: 'paid'
   },
   {
     id: '2',
-    period: 'Tháng 11/2025',
-    payDate: '05/11/2025',
-    base: 0,
-    bonusPenalty: -200000,
-    actualPay: -200000,
+    period_name: 'Tháng 11/2025',
+    payment_date: '05/11/2025',
+    base_wage: 0,
+    adjustment: -200000,
+    net_wage: -200000,
     status: 'paid'
   },
   {
     id: '3',
-    period: 'Tháng 10/2025',
-    payDate: '05/10/2025',
-    base: 0,
-    bonusPenalty: 500000,
-    actualPay: 500000,
+    period_name: 'Tháng 10/2025',
+    payment_date: '05/10/2025',
+    base_wage: 0,
+    adjustment: 500000,
+    net_wage: 500000,
     status: 'paid'
   },
   {
     id: '4',
-    period: 'Tháng 09/2025',
-    payDate: '-',
-    base: 0,
-    bonusPenalty: -200000,
-    actualPay: -200000,
+    period_name: 'Tháng 09/2025',
+    payment_date: '-',
+    base_wage: 0,
+    adjustment: -200000,
+    net_wage: -200000,
     status: 'unpaid'
   }
 ];
 
+// Map với bảng: hr_salary_history
 const mockAdjustments = [
   {
     id: '1',
-    date: '22/12/2025',
-    type: 'add',
-    role: 'Thu ngân',
-    amount: 50000,
-    status: 'pending'
+    effective_date: '22/12/2025', // Old: date
+    adjustment_type: 'add',       // Old: type (cần thêm field này vào DB hoặc dùng logic)
+    role_name: 'Thu ngân',        // Old: role
+    wage: 50000,                  // Old: amount
+    status: 'pending'             // Cần thêm field này vào DB
   },
   {
     id: '2',
-    date: '22/12/2025',
-    type: 'deduct',
-    role: 'Bếp nóng',
-    amount: 20000,
+    effective_date: '22/12/2025',
+    adjustment_type: 'deduct',
+    role_name: 'Bếp nóng',
+    wage: 20000,
     status: 'cancelled'
   },
   {
     id: '3',
-    date: '8/9',
-    type: 'add',
-    role: 'Bếp nóng',
-    amount: 20000,
-    status: 'paid'
+    effective_date: '8/9',
+    adjustment_type: 'add',
+    role_name: 'Bếp nóng',
+    wage: 20000,
+    status: 'approved'            // Map 'paid' -> 'approved' cho đúng logic master data
   }
 ];
 
@@ -287,7 +297,7 @@ function SalaryHistory({ employee }) {
   
   const [isAddingAllowance, setIsAddingAllowance] = useState(false);
   const [newAllowanceData, setNewAllowanceData] = useState({
-    name: '', type: 'ngày', condition: '', amount: 0, isActive: true
+    name: '', type: 'ngày', condition_text: '', default_amount: 0, active: true
   });
 
   const [editingId, setEditingId] = useState(null);
@@ -300,12 +310,14 @@ function SalaryHistory({ employee }) {
   const getStatusBadge = (status) => {
     const styles = {
       paid: 'bg-green-100 text-green-700',
+      approved: 'bg-green-100 text-green-700', // paid -> approved
       pending: 'bg-yellow-100 text-yellow-700',
       unpaid: 'bg-gray-100 text-gray-700',
       cancelled: 'bg-red-100 text-red-700'
     };
     const labels = {
       paid: 'Đã trả',
+      approved: 'Đã duyệt',
       pending: 'Chưa trả',
       unpaid: 'Chưa trả',
       cancelled: 'Đã hủy'
@@ -318,18 +330,18 @@ function SalaryHistory({ employee }) {
   };
 
   const handleAddNew = () => {
-    if (!newAllowanceData.name || !newAllowanceData.amount) {
+    if (!newAllowanceData.name || !newAllowanceData.default_amount) {
       alert('Vui lòng điền tên và số tiền phụ cấp');
       return;
     }
     const newItem = {
       id: Date.now().toString(),
       ...newAllowanceData,
-      amount: Number(newAllowanceData.amount)
+      default_amount: Number(newAllowanceData.default_amount)
     };
     setAllowances([...allowances, newItem]);
     setIsAddingAllowance(false);
-    setNewAllowanceData({ name: '', type: 'ngày', condition: '', amount: 0, isActive: true });
+    setNewAllowanceData({ name: '', type: 'ngày', condition_text: '', default_amount: 0, active: true });
   };
 
   const startEdit = (allowance) => {
@@ -344,7 +356,7 @@ function SalaryHistory({ employee }) {
 
   const saveEdit = () => {
     setAllowances(prev => prev.map(a => 
-      a.id === editingId ? { ...editFormData, amount: Number(editFormData.amount) } : a
+      a.id === editingId ? { ...editFormData, default_amount: Number(editFormData.default_amount) } : a
     ));
     setEditingId(null);
     setEditFormData({});
@@ -358,7 +370,7 @@ function SalaryHistory({ employee }) {
 
   const toggleAllowanceStatus = (id) => {
     setAllowances(allowances.map(a => 
-      a.id === id ? { ...a, isActive: !a.isActive } : a
+      a.id === id ? { ...a, active: !a.active } : a
     ));
   };
 
@@ -368,12 +380,9 @@ function SalaryHistory({ employee }) {
         <h2 className="text-gray-900 mb-4">Phân công vai trò</h2>
 
         <div className="flex gap-2 mb-6 flex-wrap">
-          <button onClick={() => setActiveRoleTab('kitchen')} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeRoleTab === 'kitchen' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Bếp nóng</button>
-          <button onClick={() => setActiveRoleTab('salad')} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeRoleTab === 'salad' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Bếp Salad</button>
-          <button onClick={() => setActiveRoleTab('host')} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeRoleTab === 'host' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Host</button>
-          <button onClick={() => setActiveRoleTab('mod')} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeRoleTab === 'mod' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>MOD</button>
-          <button onClick={() => setActiveRoleTab('cashier')} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeRoleTab === 'cashier' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>NV Phục vụ</button>
-          <button onClick={() => setActiveRoleTab('cashier-monthly')} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeRoleTab === 'cashier-monthly' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>Thu ngân</button>
+          {['Bếp nóng', 'Bếp Salad', 'Host', 'MOD', 'NV Phục vụ', 'Thu ngân'].map(role => (
+            <button key={role} onClick={() => setActiveRoleTab(role)} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeRoleTab === role ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{role}</button>
+          ))}
         </div>
         
         <div className="bg-gray-50 rounded-lg p-4">
@@ -428,21 +437,21 @@ function SalaryHistory({ employee }) {
                     <tr key={allowance.id} className="bg-blue-50 border-b border-blue-100">
                       <td className="px-4 py-3"><input type="text" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.name} onChange={(e) => setEditFormData({...editFormData, name: e.target.value})} /></td>
                       <td className="px-4 py-3"><select className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.type} onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}><option value="ngày">ngày</option><option value="tháng">tháng</option></select></td>
-                      <td className="px-4 py-3"><input type="text" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.condition} onChange={(e) => setEditFormData({...editFormData, condition: e.target.value})} /></td>
-                      <td className="px-4 py-3"><input type="number" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.amount} onChange={(e) => setEditFormData({...editFormData, amount: e.target.value})} /></td>
+                      <td className="px-4 py-3"><input type="text" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.condition_text} onChange={(e) => setEditFormData({...editFormData, condition_text: e.target.value})} /></td>
+                      <td className="px-4 py-3"><input type="number" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.default_amount} onChange={(e) => setEditFormData({...editFormData, default_amount: e.target.value})} /></td>
                       <td className="px-4 py-3"><div className="flex items-center justify-center gap-2"><button onClick={saveEdit} className="p-1 bg-green-500 text-white rounded hover:bg-green-600" title="Lưu"><Save className="w-4 h-4" /></button><button onClick={cancelEdit} className="p-1 bg-gray-400 text-white rounded hover:bg-gray-500" title="Hủy"><XCircle className="w-4 h-4" /></button></div></td>
                     </tr>
                   );
                 }
                 return (
-                  <tr key={allowance.id} className={`border-b border-gray-100 hover:bg-gray-50 ${!allowance.isActive ? 'bg-gray-50 opacity-60' : ''}`}>
+                  <tr key={allowance.id} className={`border-b border-gray-100 hover:bg-gray-50 ${!allowance.active ? 'bg-gray-50 opacity-60' : ''}`}>
                     <td className="px-4 py-3 text-sm font-medium">{allowance.name}</td>
                     <td className="px-4 py-3 text-sm"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs border border-blue-100">{allowance.type}</span></td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{allowance.condition}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{formatCurrency(allowance.amount)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{allowance.condition_text}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{formatCurrency(allowance.default_amount)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-3">
-                        <button onClick={() => toggleAllowanceStatus(allowance.id)} className={`transition-colors ${allowance.isActive ? 'text-green-500' : 'text-gray-400'}`} title={allowance.isActive ? "Đang hoạt động (Nhấn để tắt)" : "Đã tắt (Nhấn để bật)"}>{allowance.isActive ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}</button>
+                        <button onClick={() => toggleAllowanceStatus(allowance.id)} className={`transition-colors ${allowance.active ? 'text-green-500' : 'text-gray-400'}`} title={allowance.active ? "Đang hoạt động (Nhấn để tắt)" : "Đã tắt (Nhấn để bật)"}>{allowance.active ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}</button>
                         <div className="h-4 w-px bg-gray-300"></div>
                         <button onClick={() => startEdit(allowance)} className="p-1 hover:bg-gray-200 rounded transition-colors text-blue-600" title="Sửa"><Edit2 className="w-4 h-4" /></button>
                         <button onClick={() => handleDeleteAllowance(allowance.id)} className="p-1 hover:bg-gray-200 rounded transition-colors text-red-500" title="Xóa"><Trash2 className="w-4 h-4" /></button>
@@ -455,8 +464,8 @@ function SalaryHistory({ employee }) {
                 <tr className="bg-orange-50 border-b border-orange-100">
                   <td className="px-4 py-3"><input type="text" placeholder="Tên phụ cấp" value={newAllowanceData.name} onChange={(e) => setNewAllowanceData({ ...newAllowanceData, name: e.target.value })} className="w-full px-2 py-1 border border-orange-200 rounded text-sm focus:outline-none focus:border-orange-500" autoFocus /></td>
                   <td className="px-4 py-3"><select value={newAllowanceData.type} onChange={(e) => setNewAllowanceData({ ...newAllowanceData, type: e.target.value })} className="w-full px-2 py-1 border border-orange-200 rounded text-sm focus:outline-none focus:border-orange-500"><option value="ngày">ngày</option><option value="tháng">tháng</option></select></td>
-                  <td className="px-4 py-3"><input type="text" placeholder="Điều kiện" value={newAllowanceData.condition} onChange={(e) => setNewAllowanceData({ ...newAllowanceData, condition: e.target.value })} className="w-full px-2 py-1 border border-orange-200 rounded text-sm focus:outline-none focus:border-orange-500" /></td>
-                  <td className="px-4 py-3"><input type="number" placeholder="Số tiền" value={newAllowanceData.amount || ''} onChange={(e) => setNewAllowanceData({ ...newAllowanceData, amount: e.target.value })} className="w-full px-2 py-1 border border-orange-200 rounded text-sm focus:outline-none focus:border-orange-500" /></td>
+                  <td className="px-4 py-3"><input type="text" placeholder="Điều kiện" value={newAllowanceData.condition_text} onChange={(e) => setNewAllowanceData({ ...newAllowanceData, condition_text: e.target.value })} className="w-full px-2 py-1 border border-orange-200 rounded text-sm focus:outline-none focus:border-orange-500" /></td>
+                  <td className="px-4 py-3"><input type="number" placeholder="Số tiền" value={newAllowanceData.default_amount || ''} onChange={(e) => setNewAllowanceData({ ...newAllowanceData, default_amount: e.target.value })} className="w-full px-2 py-1 border border-orange-200 rounded text-sm focus:outline-none focus:border-orange-500" /></td>
                   <td className="px-4 py-3"><div className="flex items-center justify-center gap-2"><button onClick={handleAddNew} className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium">Thêm</button><button onClick={() => setIsAddingAllowance(false)} className="px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded text-xs font-medium">Hủy</button></div></td>
                 </tr>
               )}
@@ -488,11 +497,11 @@ function SalaryHistory({ employee }) {
             <tbody>
               {mockSalaryPeriods.map((period) => (
                 <tr key={period.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm">{period.period}</td>
-                  <td className="px-4 py-3 text-sm">{period.payDate}</td>
-                  <td className="px-4 py-3 text-sm">{formatCurrency(period.base)}</td>
-                  <td className={`px-4 py-3 text-sm ${period.bonusPenalty > 0 ? 'text-green-600' : period.bonusPenalty < 0 ? 'text-red-600' : ''}`}>{period.bonusPenalty > 0 && '+'}{formatCurrency(period.bonusPenalty)}</td>
-                  <td className="px-4 py-3 text-sm">{formatCurrency(period.actualPay)}</td>
+                  <td className="px-4 py-3 text-sm">{period.period_name}</td>
+                  <td className="px-4 py-3 text-sm">{period.payment_date}</td>
+                  <td className="px-4 py-3 text-sm">{formatCurrency(period.base_wage)}</td>
+                  <td className={`px-4 py-3 text-sm ${period.adjustment > 0 ? 'text-green-600' : period.adjustment < 0 ? 'text-red-600' : ''}`}>{period.adjustment > 0 && '+'}{formatCurrency(period.adjustment)}</td>
+                  <td className="px-4 py-3 text-sm">{formatCurrency(period.net_wage)}</td>
                   <td className="px-4 py-3">{getStatusBadge(period.status)}</td>
                 </tr>
               ))}
@@ -511,21 +520,21 @@ function SalaryHistory({ employee }) {
           {mockAdjustments.map((adjustment) => (
             <div key={adjustment.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-3">
-                <span className={`px-2 py-1 rounded text-xs ${adjustment.type === 'add' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{adjustment.type === 'add' ? 'PHÂN CÔNG MỚI' : 'KẾT THÚC VAI TRÒ'}</span>
-                <span className="text-xs text-gray-500">{adjustment.date}</span>
+                <span className={`px-2 py-1 rounded text-xs ${adjustment.adjustment_type === 'add' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{adjustment.adjustment_type === 'add' ? 'PHÂN CÔNG MỚI' : 'KẾT THÚC VAI TRÒ'}</span>
+                <span className="text-xs text-gray-500">{adjustment.effective_date}</span>
               </div>
               <div className="space-y-2">
                 <div>
                   <div className="text-xs text-gray-500 mb-1">VAI TRÒ</div>
-                  <div className="text-sm">{adjustment.role}</div>
+                  <div className="text-sm">{adjustment.role_name}</div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 mb-1">MỨC LƯƠNG</div>
-                  <div className={`${adjustment.type === 'add' ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(adjustment.amount)}<span className="text-gray-500 text-xs ml-1">{adjustment.status === 'pending' ? 'tháng' : 'lần'}</span></div>
+                  <div className={`${adjustment.adjustment_type === 'add' ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(adjustment.wage)}<span className="text-gray-500 text-xs ml-1">{adjustment.status === 'pending' ? 'tháng' : 'lần'}</span></div>
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Hiệu lực từ</div>
-                  <div className="text-sm text-orange-600">{adjustment.date}</div>
+                  <div className="text-sm text-orange-600">{adjustment.effective_date}</div>
                 </div>
               </div>
             </div>
@@ -544,17 +553,17 @@ const roleOptions = ['Bếp nóng', 'Bếp Salad', 'Thu ngân', 'NV Phục vụ'
 function AddEmployeeModal({ onClose, onAdd }) {
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    work_email: '',    // Renamed from email
     phone: '',
     type: 'Nhân viên',
-    dob: '',
-    startDate: '', // Khởi tạo startDate
-    base: 'Cơ sở 1',
+    birthday: '',      // Renamed from dob
+    hire_date: '',     // Renamed from startDate
+    work_base: 'Cơ sở 1', // Renamed from base
     roles: []
   });
 
   const handleSubmit = () => {
-    if (!formData.name || !formData.email) {
+    if (!formData.name || !formData.work_email) {
       alert('Vui lòng điền đầy đủ thông tin bắt buộc');
       return;
     }
@@ -587,7 +596,7 @@ function AddEmployeeModal({ onClose, onAdd }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-700 mb-1.5 text-sm font-medium">Email <span className="text-red-500">*</span></label>
-                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" />
+                <input type="email" value={formData.work_email} onChange={(e) => setFormData({ ...formData, work_email: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" />
               </div>
               <div>
                 <label className="block text-gray-700 mb-1.5 text-sm font-medium">Số điện thoại</label>
@@ -596,7 +605,7 @@ function AddEmployeeModal({ onClose, onAdd }) {
             </div>
              <div>
               <label className="block text-gray-700 mb-1.5 text-sm font-medium">Ngày sinh</label>
-              <input type="date" value={formData.dob} onChange={(e) => setFormData({ ...formData, dob: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" />
+              <input type="date" value={formData.birthday} onChange={(e) => setFormData({ ...formData, birthday: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" />
             </div>
           </div>
 
@@ -606,7 +615,7 @@ function AddEmployeeModal({ onClose, onAdd }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                <div>
                 <label className="block text-gray-700 mb-1.5 text-sm font-medium">Cơ sở</label>
-                <select value={formData.base} onChange={(e) => setFormData({...formData, base: e.target.value})} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg">
+                <select value={formData.work_base} onChange={(e) => setFormData({...formData, work_base: e.target.value})} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg">
                   {baseOptions.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
@@ -624,8 +633,8 @@ function AddEmployeeModal({ onClose, onAdd }) {
               <div className="relative">
                 <input 
                   type="date" 
-                  value={formData.startDate} 
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} 
+                  value={formData.hire_date} 
+                  onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })} 
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" 
                 />
               </div>
@@ -655,9 +664,10 @@ function AddEmployeeModal({ onClose, onAdd }) {
 
 // 4. DeactivateEmployeeModal Component
 function DeactivateEmployeeModal({ employee, onClose, onDeactivate }) {
-  const [date, setDate] = useState(employee.deactivationDate || '');
-  const [reason, setReason] = useState(employee.deactivationReason || '');
-  const [note, setNote] = useState(employee.deactivationNote || '');
+  // Use new DB field names
+  const [date, setDate] = useState(employee.deactivation_date || '');
+  const [reason, setReason] = useState(employee.deactivation_reason || '');
+  const [note, setNote] = useState(employee.deactivation_note || '');
 
   const handleSubmit = () => {
     if (!date || !reason) {
@@ -668,7 +678,7 @@ function DeactivateEmployeeModal({ employee, onClose, onDeactivate }) {
     onClose();
   };
 
-  const isEditing = employee.status === 'inactive' || (employee.deactivationDate && new Date(employee.deactivationDate) > new Date());
+  const isEditing = employee.status === 'inactive' || (employee.deactivation_date && new Date(employee.deactivation_date) > new Date());
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -764,7 +774,7 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 mb-2 font-medium">Email</label>
-                    <input type="email" value={editedEmployee.email} onChange={(e) => setEditedEmployee({ ...editedEmployee, email: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                    <input type="email" value={editedEmployee.work_email} onChange={(e) => setEditedEmployee({ ...editedEmployee, work_email: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
                   </div>
                   <div>
                     <label className="block text-gray-700 mb-2 font-medium">Di động</label>
@@ -775,7 +785,7 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 mb-2 font-medium">Cơ sở làm việc</label>
-                    <select value={editedEmployee.base} onChange={(e) => setEditedEmployee({...editedEmployee, base: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <select value={editedEmployee.work_base} onChange={(e) => setEditedEmployee({...editedEmployee, work_base: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
                       {baseOptions.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
@@ -791,17 +801,17 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    <div>
                     <label className="block text-gray-700 mb-2 font-medium">Ngày sinh</label>
-                    <input type="date" value={editedEmployee.dob || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, dob: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                    <input type="date" value={editedEmployee.birthday || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, birthday: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
                   </div>
                   <div>
                     <label className="block text-gray-700 mb-2 font-medium">Ngày bắt đầu làm việc</label>
-                    <input type="date" value={editedEmployee.startDate || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, startDate: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                    <input type="date" value={editedEmployee.hire_date || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, hire_date: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
                   </div>
                 </div>
                 
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">Địa chỉ</label>
-                  <input type="text" value={editedEmployee.address || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, address: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
+                  <input type="text" value={editedEmployee.location || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, location: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
                 </div>
               </div>
             </div>
@@ -816,11 +826,11 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">Tên liên hệ</label>
-                  <input type="text" value={editedEmployee.emergencyContactName || ''} onChange={(e) => setEditedEmployee({...editedEmployee, emergencyContactName: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" value={editedEmployee.emergency_contact_name || ''} onChange={(e) => setEditedEmployee({...editedEmployee, emergency_contact_name: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 </div>
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">Số liên hệ</label>
-                  <input type="tel" value={editedEmployee.emergencyContactPhone || ''} onChange={(e) => setEditedEmployee({...editedEmployee, emergencyContactPhone: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="tel" value={editedEmployee.emergency_contact_phone || ''} onChange={(e) => setEditedEmployee({...editedEmployee, emergency_contact_phone: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 </div>
               </div>
             </div>
@@ -859,13 +869,13 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
           <div className="space-y-4">
             <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0 text-white font-bold text-xl">{employee.avatar}</div>
+                <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center flex-shrink-0 text-white font-bold text-xl">{employee.avatar_url}</div>
                 <div className="min-w-0">
                   <div className="text-gray-900 font-medium truncate">{employee.name}</div>
-                  <div className="text-sm text-gray-500 truncate">{employee.email}</div>
+                  <div className="text-sm text-gray-500 truncate">{employee.work_email}</div>
                    <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
                      <MapPin className="w-3 h-3" />
-                     {employee.base}
+                     {employee.work_base}
                   </div>
                 </div>
               </div>
@@ -893,24 +903,24 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
                   <div>
                     <h3 className="text-sm font-semibold text-red-800">Nhân viên này đã nghỉ việc</h3>
                     <div className="mt-1 text-sm text-red-700 space-y-1">
-                      <p><span className="font-medium">Ngày nghỉ:</span> {employee.deactivationDate}</p>
-                      <p><span className="font-medium">Lý do:</span> {employee.deactivationReason}</p>
-                      {employee.deactivationNote && <p><span className="font-medium">Ghi chú:</span> {employee.deactivationNote}</p>}
+                      <p><span className="font-medium">Ngày nghỉ:</span> {employee.deactivation_date}</p>
+                      <p><span className="font-medium">Lý do:</span> {employee.deactivation_reason}</p>
+                      {employee.deactivation_note && <p><span className="font-medium">Ghi chú:</span> {employee.deactivation_note}</p>}
                     </div>
                   </div>
                 </div>
               </div>
             )}
-            {employee.status === 'active' && employee.deactivationDate && new Date(employee.deactivationDate) > new Date() && (
+            {employee.status === 'active' && employee.deactivation_date && new Date(employee.deactivation_date) > new Date() && (
               <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg shadow-sm animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <h3 className="text-sm font-semibold text-yellow-800">Nhân viên dự kiến nghỉ việc</h3>
                     <div className="mt-1 text-sm text-yellow-700 space-y-1">
-                      <p><span className="font-medium">Ngày nghỉ dự kiến:</span> {employee.deactivationDate}</p>
-                      <p><span className="font-medium">Lý do:</span> {employee.deactivationReason}</p>
-                      {employee.deactivationNote && <p><span className="font-medium">Ghi chú:</span> {employee.deactivationNote}</p>}
+                      <p><span className="font-medium">Ngày nghỉ dự kiến:</span> {employee.deactivation_date}</p>
+                      <p><span className="font-medium">Lý do:</span> {employee.deactivation_reason}</p>
+                      {employee.deactivation_note && <p><span className="font-medium">Ghi chú:</span> {employee.deactivation_note}</p>}
                     </div>
                   </div>
                 </div>
@@ -982,7 +992,7 @@ function EmployeeList({
 
   const getStatusColor = (employee) => {
     if (employee.status === 'inactive') return 'bg-red-100 text-red-700';
-    if (employee.deactivationDate && new Date(employee.deactivationDate) > new Date()) {
+    if (employee.deactivation_date && new Date(employee.deactivation_date) > new Date()) {
       return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
     }
     return 'bg-green-100 text-green-700';
@@ -990,7 +1000,7 @@ function EmployeeList({
 
   const getStatusText = (employee) => {
     if (employee.status === 'inactive') return 'Đã nghỉ việc';
-    if (employee.deactivationDate && new Date(employee.deactivationDate) > new Date()) {
+    if (employee.deactivation_date && new Date(employee.deactivation_date) > new Date()) {
       return 'Sắp nghỉ việc';
     }
     return 'Hoạt động';
@@ -1012,16 +1022,14 @@ function EmployeeList({
 
     // 2. Filter by Inactive Specifics (only for 'former' tab)
     if (viewTab === 'former') {
-      if (filterReason !== 'all' && emp.deactivationReason !== filterReason) return false;
-      if (filterMonth && emp.deactivationDate) {
+      if (filterReason !== 'all' && emp.deactivation_reason !== filterReason) return false;
+      if (filterMonth && emp.deactivation_date) {
         // Compare YYYY-MM
-        if (!emp.deactivationDate.startsWith(filterMonth)) return false;
+        if (!emp.deactivation_date.startsWith(filterMonth)) return false;
       }
     }
 
-    return true; // Search/Base/Position filtering is handled in parent App component passed via props, but we need to re-apply if we want complete isolation or rely on parent. 
-    // Currently parent filters by search/base/pos. So `employees` prop is ALREADY filtered by those.
-    // We just add the tab layer on top.
+    return true; 
   });
 
   return (
@@ -1109,7 +1117,7 @@ function EmployeeList({
           filteredEmployeesByTab.map((employee) => (
             <div key={employee.id} className="bg-white rounded-lg p-5 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer border border-gray-100 relative group" onClick={() => onSelectEmployee(employee)}>
               <div className="w-12 h-12 rounded-full bg-orange-200 flex items-center justify-center flex-shrink-0">
-                <span className="text-orange-600 text-xl font-bold">{employee.avatar}</span>
+                <span className="text-orange-600 text-xl font-bold">{employee.avatar_url}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-1">
@@ -1118,27 +1126,27 @@ function EmployeeList({
                 </div>
                 <div className="flex items-center gap-1 text-gray-500 text-sm mb-1 truncate">
                   <span>✉</span>
-                  <span className="truncate">{employee.email}</span>
+                  <span className="truncate">{employee.work_email}</span>
                 </div>
                 <div className="flex items-center gap-1 text-gray-500 text-sm mb-1 truncate">
                    <MapPin className="w-3.5 h-3.5" />
-                   <span className="truncate">{employee.base}</span>
+                   <span className="truncate">{employee.work_base}</span>
                 </div>
-                {(employee.department || employee.position) && (
+                {(employee.department || employee.job_role_name) && (
                   <div className="flex items-center gap-1 text-gray-500 text-sm truncate">
                     <span>👥</span>
                     <span className="truncate">
                       {employee.department}
-                      {employee.department && employee.position && ', '}
-                      {employee.position}
+                      {employee.department && employee.job_role_name && ', '}
+                      {employee.job_role_name}
                     </span>
                   </div>
                 )}
                 {/* Show deactivation reason/date in former tab */}
                 {viewTab === 'former' && (
                   <div className="text-xs text-red-600 mt-1">
-                    <p> Đã nghỉ: {employee.deactivationDate} </p>
-                    <p> Lý do: {employee.deactivationReason} </p>
+                    <p> Đã nghỉ: {employee.deactivation_date} </p>
+                    <p> Lý do: {employee.deactivation_reason} </p>
                   </div>
                 )}
               </div>
@@ -1154,7 +1162,7 @@ function EmployeeList({
                     
                     {/* Logic menu items based on status */}
                     {viewTab === 'current' && (
-                      employee.deactivationDate && new Date(employee.deactivationDate) > new Date() ? (
+                      employee.deactivation_date && new Date(employee.deactivation_date) > new Date() ? (
                         <>
                           <button onClick={(e) => { e.stopPropagation(); setDeactivatingEmployee(employee); setActiveMenuEmployeeId(null); }} className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"><FileEdit className="w-4 h-4" /> Sửa thông tin nghỉ</button>
                           <button onClick={(e) => { e.stopPropagation(); setReactivatingEmployee(employee); setActiveMenuEmployeeId(null); }} className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center gap-2"><RotateCcw className="w-4 h-4" /> Hủy lịch nghỉ</button>
@@ -1198,8 +1206,8 @@ export default function App() {
   const [filterBase, setFilterBase] = useState('all');
   const [filterPosition, setFilterPosition] = useState('all');
 
-  const uniqueBases = useMemo(() => Array.from(new Set(employees.map(e => e.base))).filter(Boolean).sort(), [employees]);
-  const uniquePositions = useMemo(() => Array.from(new Set(employees.map(e => e.position))).filter(Boolean).sort(), [employees]);
+  const uniqueBases = useMemo(() => Array.from(new Set(employees.map(e => e.work_base))).filter(Boolean).sort(), [employees]);
+  const uniquePositions = useMemo(() => Array.from(new Set(employees.map(e => e.job_role_name))).filter(Boolean).sort(), [employees]);
   
   const handleSelectEmployee = (employee) => setSelectedEmployee(employee);
   const handleCloseDetail = () => setSelectedEmployee(null);
@@ -1210,40 +1218,41 @@ export default function App() {
 
   const handleDeactivateEmployee = (id, date, reason, note) => {
     const shouldDeactivate = new Date(date) <= new Date();
-    setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: shouldDeactivate ? 'inactive' : emp.status, deactivationDate: date, deactivationReason: reason, deactivationNote: note } : emp));
+    setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: shouldDeactivate ? 'inactive' : emp.status, deactivation_date: date, deactivation_reason: reason, deactivation_note: note } : emp));
     if (selectedEmployee?.id === id) {
-      setSelectedEmployee(prev => prev ? { ...prev, status: shouldDeactivate ? 'inactive' : prev.status, deactivationDate: date, deactivationReason: reason, deactivationNote: note } : null);
+      setSelectedEmployee(prev => prev ? { ...prev, status: shouldDeactivate ? 'inactive' : prev.status, deactivation_date: date, deactivation_reason: reason, deactivation_note: note } : null);
     }
   };
 
   const handleReactivateEmployee = (id) => {
-      setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: 'active', deactivationDate: undefined, deactivationReason: undefined, deactivationNote: undefined } : emp));
+      setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: 'active', deactivation_date: undefined, deactivation_reason: undefined, deactivation_note: undefined } : emp));
       if (selectedEmployee?.id === id) {
-        setSelectedEmployee(prev => prev ? { ...prev, status: 'active', deactivationDate: undefined, deactivationReason: undefined, deactivationNote: undefined } : null);
+        setSelectedEmployee(prev => prev ? { ...prev, status: 'active', deactivation_date: undefined, deactivation_reason: undefined, deactivation_note: undefined } : null);
       }
   };
 
   const handleAddEmployee = (data) => {
+    // Mapping form data to new DB schema structure
     const newEmployee = {
       id: Date.now().toString(),
       name: data.name,
-      email: data.email,
+      work_email: data.work_email,     // Mapped field
       phone: data.phone,
-      dob: data.dob,
-      base: data.base,
+      birthday: data.birthday,         // Mapped field
+      work_base: data.work_base,       // Mapped field
       department: data.roles[0] || '',
-      position: data.roles[1] || data.roles[0] || '',
+      job_role_name: data.roles[1] || data.roles[0] || '', // Mapped field
       status: 'active',
-      avatar: data.name.charAt(0).toUpperCase(),
-      startDate: data.startDate // Lưu startDate
+      avatar_url: data.name.charAt(0).toUpperCase(), // Mapped field
+      hire_date: data.hire_date        // Mapped field
     };
     setEmployees(prev => [newEmployee, ...prev]);
   };
 
   const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) || emp.email.toLowerCase().includes(searchTerm.toLowerCase()) || (emp.phone && emp.phone.includes(searchTerm));
-    const matchesBase = filterBase === 'all' || emp.base === filterBase;
-    const matchesPosition = filterPosition === 'all' || emp.position === filterPosition;
+    const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) || emp.work_email.toLowerCase().includes(searchTerm.toLowerCase()) || (emp.phone && emp.phone.includes(searchTerm));
+    const matchesBase = filterBase === 'all' || emp.work_base === filterBase;
+    const matchesPosition = filterPosition === 'all' || emp.job_role_name === filterPosition;
     return matchesSearch && matchesBase && matchesPosition;
   });
 

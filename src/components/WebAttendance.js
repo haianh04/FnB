@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Search, Download, Edit, Check, X, 
-  Clock, User, MapPin
+  Search, Edit, Check, X, 
+  Clock, User, PlusCircle, RotateCcw,
+  UserCheck, CalendarOff, AlertCircle
 } from 'lucide-react';
 
 /**
@@ -9,6 +10,10 @@ import {
  */
 const getRoleBadgeStyle = (roleName) => {
   const role = roleName ? roleName.toUpperCase() : "";
+  if (role.includes("THỜI VỤ")) return "bg-purple-100 text-purple-700 border-purple-200";
+  if (role.includes("RỬA BÁT")) return "bg-purple-50 text-purple-600 border-purple-200";
+  if (role.includes("PHỤ BẾP")) return "bg-gray-100 text-gray-700 border-gray-200";
+  
   if (role.includes("PHỤC VỤ")) return "bg-orange-50 text-orange-600 border-orange-200"; 
   if (role.includes("PHA CHẾ")) return "bg-blue-50 text-blue-600 border-blue-200"; 
   if (role.includes("THU NGÂN")) return "bg-green-50 text-green-600 border-green-200"; 
@@ -59,6 +64,7 @@ const WebAttendance = () => {
       checkInImage: 'https://via.placeholder.com/150',
       status: 'approved',
       isAutoCheckout: false,
+      isSeasonal: false,
       note: '',
       location: 'Cơ sở 1',
     },
@@ -72,13 +78,14 @@ const WebAttendance = () => {
       shiftStart: '08:00',
       shiftEnd: '17:00',
       checkIn: '08:15',
-      checkOut: '17:00',
-      breakStart: '12:00',
-      breakEnd: '13:00',
+      checkOut: null, // Đang làm việc (Chưa checkout)
+      breakStart: null,
+      breakEnd: null,
       breakType: 'unpaid',
       checkInImage: 'https://via.placeholder.com/150',
       status: 'pending',
       isAutoCheckout: false,
+      isSeasonal: false,
       note: 'Xe hỏng',
       location: 'Cơ sở 1',
     },
@@ -92,13 +99,14 @@ const WebAttendance = () => {
       shiftStart: '14:00',
       shiftEnd: '22:00',
       checkIn: '14:00',
-      checkOut: '23:00',
-      breakStart: '18:00',
-      breakEnd: '18:30',
+      checkOut: null, // Đang làm việc
+      breakStart: null,
+      breakEnd: null,
       breakType: 'unpaid',
       checkInImage: 'https://via.placeholder.com/150',
-      status: 'rejected',
-      isAutoCheckout: false, 
+      status: 'pending',
+      isAutoCheckout: false,
+      isSeasonal: false,
       note: 'Check-in sai vị trí',
       location: 'Cơ sở 2',
     },
@@ -111,7 +119,7 @@ const WebAttendance = () => {
       hourlyRate: 45000,
       shiftStart: '18:00',
       shiftEnd: '23:00',
-      checkIn: null,
+      checkIn: null, // Chưa checkin
       checkOut: null,
       breakStart: null,
       breakEnd: null,
@@ -119,6 +127,7 @@ const WebAttendance = () => {
       checkInImage: null,
       status: 'missing',
       isAutoCheckout: false,
+      isSeasonal: false,
       note: '',
       location: 'Cơ sở 1',
     },
@@ -139,12 +148,36 @@ const WebAttendance = () => {
       checkInImage: 'https://via.placeholder.com/150',
       status: 'pending',
       isAutoCheckout: true,
+      isSeasonal: false,
       note: 'Quên checkout',
+      location: 'Cơ sở 1',
+    },
+    {
+      id: 99, // ID ví dụ cho thời vụ
+      date: '2023-10-25',
+      employeeName: 'Trần Văn T',
+      department: 'Kho',
+      role: 'Phụ bếp',
+      hourlyRate: 25000,
+      shiftStart: null,
+      shiftEnd: null,
+      checkIn: '08:00',
+      checkOut: '12:00',
+      breakStart: null,
+      breakEnd: null,
+      breakType: 'unpaid',
+      checkInImage: null,
+      status: 'approved',
+      isAutoCheckout: false,
+      isSeasonal: true,
+      note: 'Cắt gọt đồ ăn',
       location: 'Cơ sở 1',
     }
   ];
 
   const [attendanceData, setAttendanceData] = useState(initialData);
+  const [isSeasonalModalOpen, setIsSeasonalModalOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Bộ lọc
   const [filters, setFilters] = useState({
@@ -153,16 +186,52 @@ const WebAttendance = () => {
     location: 'All',
     department: 'All',
     role: 'All',
+    employeeType: 'All', 
     searchName: ''
   });
 
   const [editingItem, setEditingItem] = useState(null);
   const [viewingImage, setViewingImage] = useState(null);
 
-  // --- 2. LOGIC TÍNH TOÁN (ĐÃ CẬP NHẬT GHI CHÚ THEO CÔNG THỨC) ---
+  // --- 2. LOGIC TÍNH TOÁN ---
   
   const calculateRowData = (item) => {
-    // Nếu vắng
+    // LOGIC RIÊNG CHO THỜI VỤ
+    if (item.isSeasonal) {
+      if (!item.checkIn || !item.checkOut) {
+         return { ...item, standardHours: 0, otHours: 0, estimatedSalary: 0, missingMinutes: 0 };
+      }
+      const checkIn = timeToMinutes(item.checkIn);
+      const checkOut = timeToMinutes(item.checkOut);
+      
+      let grossMinutes = checkOut - checkIn;
+      let breakMinutes = 0;
+      if (item.breakStart && item.breakEnd) {
+         breakMinutes = timeToMinutes(item.breakEnd) - timeToMinutes(item.breakStart);
+      }
+      
+      let workMinutes = grossMinutes;
+      if (item.breakType === 'unpaid') {
+        workMinutes = Math.max(0, grossMinutes - breakMinutes);
+      }
+
+      const standardHours = workMinutes / 60;
+      const estimatedSalary = standardHours * item.hourlyRate;
+
+      return {
+        ...item,
+        scheduledHours: 0, 
+        lateMinutes: 0,
+        earlyMinutes: 0,
+        missingMinutes: 0,
+        standardHours,
+        otHours: 0, 
+        breakDurationMinutes: breakMinutes,
+        estimatedSalary
+      };
+    }
+
+    // LOGIC CŨ CHO NHÂN VIÊN CHÍNH THỨC
     if (!item.checkIn || !item.checkOut) {
       return {
         ...item,
@@ -177,16 +246,11 @@ const WebAttendance = () => {
       };
     }
 
-    // Quy đổi hết ra phút
     const shiftStart = timeToMinutes(item.shiftStart);
     const shiftEnd = timeToMinutes(item.shiftEnd);
     const checkIn = timeToMinutes(item.checkIn);
     const checkOut = timeToMinutes(item.checkOut);
 
-    // ==========================================
-    // 1. TÍNH GIỜ NGHỈ (Break_Time)
-    // ==========================================
-    // Break_Time = breakEnd - breakStart
     const breakStartMin = timeToMinutes(item.breakStart);
     const breakEndMin = timeToMinutes(item.breakEnd);
     
@@ -197,59 +261,25 @@ const WebAttendance = () => {
       breakDurationMinutes = item.breakTime || 0;
     }
 
-    // Xử lý loại nghỉ (Paid/Unpaid)
-    // - Nếu breakType là Có lương: = 0 (Không trừ)
-    // - Nếu breakType là Không lương: = Break_Time (Trừ thẳng vào giờ làm)
     const deductibleBreakMinutes = item.breakType === 'paid' ? 0 : breakDurationMinutes;
-
-    // ==========================================
-    // 2. TÍNH SỐ GIỜ LÀM THEO LỊCH (Scheduled)
-    // ==========================================
-    // Giờ bắt đầu - Giờ kết thúc (Theo lịch)
     const scheduledHours = (shiftEnd - shiftStart) / 60;
-
-    // ==========================================
-    // 3. TÍNH THIẾU (Missing = Late + Early)
-    // ==========================================
-    // Đi trễ: IF (Real_CheckIn > Shift_Start) THEN ... ELSE 0
     const late = Math.max(0, checkIn - shiftStart - CONFIG.ALLOWED_LATE_MINUTES);
-    
-    // Về sớm: IF (Real_CheckOut < Shift_End) THEN ... ELSE 0
     const early = Math.max(0, shiftEnd - checkOut - CONFIG.ALLOWED_EARLY_MINUTES);
-    
     const missingMinutes = late + early;
-
-    // ==========================================
-    // 4. TÍNH GIỜ CÔNG (Standard Hours)
-    // ==========================================
-    // B1. Xác định thời điểm bắt đầu (T_Start) = MAX(Real_CheckIn, Shift_Start)
     const effectiveStart = Math.max(checkIn, shiftStart);
-    
-    // B2. Xác định thời điểm kết thúc (T_End) = MIN(Real_CheckOut, Shift_End)
     const effectiveEndStandard = Math.min(checkOut, shiftEnd);
-    
-    // B3. Tính toán = MAX(0, T_End - T_Start - Break_Time_Deductible)
     let standardMinutes = Math.max(0, effectiveEndStandard - effectiveStart - deductibleBreakMinutes);
     const standardHours = standardMinutes / 60;
 
-    // ==========================================
-    // 5. TÍNH GIỜ OT
-    // ==========================================
-    // IF (Real_CheckOut > Shift_End) THEN Real_CheckOut - Shift_End ELSE 0
     let otMinutes = 0;
     if (checkOut > shiftEnd) {
       otMinutes = checkOut - shiftEnd;
     }
     const otHours = otMinutes / 60;
 
-    // ==========================================
-    // 6. TÍNH LƯƠNG DỰ KIẾN
-    // ==========================================
-    // (Giờ công + Giờ OT) x Lương/giờ
     const totalPaidHours = standardHours + otHours;
     let estimatedSalary = totalPaidHours * item.hourlyRate;
 
-    // Nếu bị từ chối thì lương = 0
     if (item.status === 'rejected') {
       estimatedSalary = 0;
     }
@@ -271,17 +301,30 @@ const WebAttendance = () => {
     return attendanceData.map(calculateRowData);
   }, [attendanceData]);
 
-  // --- 3. DỮ LIỆU HIỂN THỊ ---
+  // --- 3. DỮ LIỆU HIỂN THỊ & THỐNG KÊ MỚI ---
 
   const stats = useMemo(() => {
     const today = '2023-10-25'; 
     const todayData = calculatedData.filter(i => i.date === today);
     
-    const totalWorking = todayData.filter(i => i.checkIn && !i.checkOut).length;
-    const notCheckedIn = todayData.filter(i => !i.checkIn && i.status !== 'leave').length; 
-    const onLeave = todayData.filter(i => i.status === 'leave').length; 
+    // 1. Đã Check-in: Có giờ vào
+    const checkedInCount = todayData.filter(i => i.checkIn).length;
+    
+    // 2. Đang làm việc: Có giờ vào nhưng CHƯA có giờ ra
+    const workingCount = todayData.filter(i => i.checkIn && !i.checkOut).length;
+    
+    // 3. Chưa Check-in: Có ca làm (hoặc shiftStart) nhưng chưa có giờ vào
+    const notCheckedInCount = todayData.filter(i => !i.checkIn && i.shiftStart && !i.isSeasonal).length;
+    
+    // 4. Vắng mặt: Status missing hoặc chưa checkin (đơn giản hoá theo logic chưa checkin)
+    const absentCount = todayData.filter(i => i.status === 'missing' || (!i.checkIn && i.shiftStart && i.status === 'rejected')).length;
 
-    return { totalWorking, notCheckedIn, onLeave };
+    return { 
+      checkedIn: checkedInCount,
+      working: workingCount,
+      notCheckedIn: notCheckedInCount,
+      absent: absentCount
+    };
   }, [calculatedData]);
 
   const filteredData = useMemo(() => {
@@ -291,6 +334,10 @@ const WebAttendance = () => {
     }
     if (filters.location !== 'All') data = data.filter(i => i.location === filters.location);
     if (filters.department !== 'All') data = data.filter(i => i.department === filters.department);
+    
+    if (filters.employeeType === 'Official') data = data.filter(i => !i.isSeasonal);
+    if (filters.employeeType === 'Seasonal') data = data.filter(i => i.isSeasonal);
+
     if (filters.searchName) {
       data = data.filter(i => i.employeeName.toLowerCase().includes(filters.searchName.toLowerCase()));
     }
@@ -323,6 +370,15 @@ const WebAttendance = () => {
     ));
   };
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    // Giả lập loading
+    setTimeout(() => {
+      setIsRefreshing(false);
+      // alert("Đã làm mới dữ liệu!"); 
+    }, 800);
+  };
+
   const handleSaveEdit = (formData) => {
     setAttendanceData(prev => prev.map(item => 
       item.id === formData.id ? { ...item, ...formData } : item
@@ -330,7 +386,30 @@ const WebAttendance = () => {
     setEditingItem(null);
   };
 
+  const handleSaveSeasonal = (data) => {
+    const newId = Date.now();
+    const newItem = {
+      id: newId,
+      ...data,
+      isSeasonal: true,
+      status: 'approved',
+      shiftStart: null,
+      shiftEnd: null,
+      checkInImage: null,
+      isAutoCheckout: false
+    };
+    setAttendanceData(prev => [newItem, ...prev]);
+    setIsSeasonalModalOpen(false);
+  };
+
   const getRowStyleInfo = (row) => {
+    if (row.isSeasonal) {
+      return {
+        rowClass: 'bg-purple-50 hover:bg-purple-100',
+        stickyBg: 'bg-purple-50',
+        isRejected: false
+      };
+    }
     if (row.status === 'rejected') {
       return {
         rowClass: 'bg-gray-100 text-gray-400',
@@ -362,275 +441,332 @@ const WebAttendance = () => {
   // --- RENDER ---
 
   return (
-    <div className="min-h-screen bg-gray-50 text-sm font-sans text-gray-800 p-4 flex flex-col">
-      {/* HEADER & STATS */}
-      <div className="mb-6 flex-shrink-0">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            Quản Lý Chấm Công
-          </h1>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <StatCard 
-            title="Đang làm việc" 
-            value={stats.totalWorking} 
-            color="bg-green-100 text-green-700" 
-            icon={<Clock className="w-5 h-5" />}
-            desc="Hôm nay"
-          />
-          <StatCard 
-            title="Chưa Check-in" 
-            value={stats.notCheckedIn} 
-            color="bg-orange-100 text-orange-700" 
-            icon={<User className="w-5 h-5" />}
-            desc="Hôm nay"
-          />
-          <StatCard 
-            title="Xin nghỉ" 
-            value={stats.onLeave} 
-            color="bg-purple-100 text-purple-700" 
-            icon={<MapPin className="w-5 h-5" />}
-            desc="Hôm nay"
-          />
-        </div>
-      </div>
-
-      {/* FILTER */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-4 border border-gray-200 flex-shrink-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-          <div className="lg:col-span-2 flex gap-2">
-            <div className="flex-1">
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Từ ngày</label>
-              <input 
-                type="date" 
-                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-                value={filters.startDate}
-                onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-              />
-            </div>
-            <div className="flex-1">
-              <label className="text-xs font-semibold text-gray-500 mb-1 block">Đến ngày</label>
-              <input 
-                type="date" 
-                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-                value={filters.endDate}
-                onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-              />
-            </div>
-          </div>
-          <FilterSelect 
-            label="Cơ sở" 
-            options={['All', 'Cơ sở 1', 'Cơ sở 2']} 
-            value={filters.location}
-            onChange={(v) => setFilters({...filters, location: v})}
-          />
-          <FilterSelect 
-            label="Bộ phận" 
-            options={['All', 'Bếp', 'Bar', 'Thu ngân', 'Phục vụ']} 
-            value={filters.department}
-            onChange={(v) => setFilters({...filters, department: v})}
-          />
-           <div className="relative">
-             <label className="text-xs font-semibold text-gray-500 mb-1 block">Tìm nhân viên</label>
-              <input 
-                type="text" 
-                placeholder="Nhập tên..." 
-                className="w-full pl-9 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
-                value={filters.searchName}
-                onChange={(e) => setFilters({...filters, searchName: e.target.value})}
-              />
-              <Search className="w-4 h-4 absolute left-3 top-8 text-gray-400" />
-          </div>
-        </div>
-        <div className="mt-4 flex justify-end gap-2">
-           <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 font-medium text-xs uppercase">
-              <Download className="w-4 h-4" /> Xuất Excel
-            </button>
+    <div className="h-screen w-full bg-gray-50 text-sm font-sans text-gray-800 flex flex-col overflow-hidden">
+      
+      {/* HEADER, STATS & FILTER - CỐ ĐỊNH */}
+      <div className="flex-none p-4 pb-0">
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              Quản Lý Chấm Công
+            </h1>
+            
+            {/* NÚT LÀM MỚI ĐÃ ĐƯỢC CHUYỂN QUA ĐÂY */}
             <button 
-              onClick={handleApproveAll}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium shadow-sm text-xs uppercase"
+              onClick={handleRefresh}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded-md text-xs font-medium text-gray-600 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all shadow-sm active:scale-95"
             >
-              <Check className="w-4 h-4" /> Chấp nhận tất cả
+              <RotateCcw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-blue-600' : ''}`} />
+              {isRefreshing ? 'Đang tải...' : 'Làm mới'}
             </button>
+          </div>
+
+          {/* 4 CARDS THỐNG KÊ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <StatCard 
+              title="Đã Check-in" 
+              value={stats.checkedIn} 
+              color="bg-green-100 text-green-700" 
+              icon={<UserCheck className="w-5 h-5" />}
+              desc="Hôm nay"
+            />
+            <StatCard 
+              title="Đang làm việc" 
+              value={stats.working} 
+              color="bg-blue-100 text-blue-700" 
+              icon={<Clock className="w-5 h-5" />}
+              desc="Chưa checkout"
+            />
+            <StatCard 
+              title="Chưa Check-in" 
+              value={stats.notCheckedIn} 
+              color="bg-orange-100 text-orange-700" 
+              icon={<CalendarOff className="w-5 h-5" />}
+              desc="Hôm nay"
+            />
+            <StatCard 
+              title="Vắng mặt" 
+              value={stats.absent} 
+              color="bg-red-100 text-red-700" 
+              icon={<AlertCircle className="w-5 h-5" />}
+              desc="Có ca không checkin"
+            />
+          </div>
+        </div>
+
+        {/* FILTER & ACTIONS */}
+        <div className="bg-white p-4 rounded-lg shadow-sm mb-4 border border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+            <div className="lg:col-span-2 flex gap-2">
+              <div className="flex-1">
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Từ ngày</label>
+                <input 
+                  type="date" 
+                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={filters.startDate}
+                  onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs font-semibold text-gray-500 mb-1 block">Đến ngày</label>
+                <input 
+                  type="date" 
+                  className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={filters.endDate}
+                  onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                />
+              </div>
+            </div>
+            <FilterSelect 
+              label="Cơ sở" 
+              options={['All', 'Cơ sở 1', 'Cơ sở 2']} 
+              value={filters.location}
+              onChange={(v) => setFilters({...filters, location: v})}
+            />
+            <FilterSelect 
+              label="Loại nhân viên" 
+              options={[{val:'All', txt:'Tất cả'}, {val:'Official', txt:'Chính thức'}, {val:'Seasonal', txt:'Thời vụ'}]}
+              value={filters.employeeType}
+              onChange={(v) => setFilters({...filters, employeeType: v})}
+              isObj
+            />
+            <FilterSelect 
+              label="Bộ phận" 
+              options={['All', 'Bếp', 'Bar', 'Thu ngân', 'Phục vụ', 'Kho', 'Khác']} 
+              value={filters.department}
+              onChange={(v) => setFilters({...filters, department: v})}
+            />
+             <div className="relative">
+               <label className="text-xs font-semibold text-gray-500 mb-1 block">Tìm nhân viên</label>
+                <input 
+                  type="text" 
+                  placeholder="Nhập tên..." 
+                  className="w-full pl-9 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={filters.searchName}
+                  onChange={(e) => setFilters({...filters, searchName: e.target.value})}
+                />
+                <Search className="w-4 h-4 absolute left-3 top-8 text-gray-400" />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end gap-2 items-center">
+              <button 
+                onClick={() => setIsSeasonalModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 font-medium shadow-sm text-xs uppercase transition-colors"
+              >
+                <PlusCircle className="w-4 h-4" /> Thêm công Thời vụ
+              </button>
+              <button 
+                onClick={handleApproveAll}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium shadow-sm text-xs uppercase transition-colors"
+              >
+                <Check className="w-4 h-4" /> Chấp nhận tất cả
+              </button>
+          </div>
         </div>
       </div>
 
-      {/* DATA TABLE */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-[calc(100vh-240px)]"> 
-        <div className="overflow-auto relative flex-1"> 
-          <table className="w-full whitespace-nowrap">
-            <thead className="bg-gray-100 text-gray-600 font-semibold text-xs uppercase tracking-wider sticky top-0 z-30 shadow-sm">
-              <tr>
-                <th className="p-3 text-left border-r sticky left-0 top-0 z-50 bg-gray-100 w-[100px] min-w-[100px]">Thời gian</th>
-                <th className="p-3 text-left border-r sticky left-[100px] top-0 z-50 bg-gray-100 min-w-[150px]">Tên nhân viên</th>
-                
-                <th className="p-3 text-left sticky top-0 z-30 bg-gray-100">Bộ phận</th>
-                <th className="p-3 text-left sticky top-0 z-30 bg-gray-100">Vai trò</th>
-                <th className="p-3 text-right sticky top-0 z-30 bg-gray-100">Lương/h</th>
-                <th className="p-3 text-center sticky top-0 z-30 bg-gray-100">Ca làm việc</th>
-                <th className="p-3 text-center bg-blue-50 sticky top-0 z-30">Thực tế</th>
-                <th className="p-3 text-right text-red-600 sticky top-0 z-30 bg-gray-100">Thiếu</th>
-                <th className="p-3 text-right sticky top-0 z-30 bg-gray-100">Giờ công</th>
-                <th className="p-3 text-right text-purple-600 sticky top-0 z-30 bg-gray-100">Giờ OT</th>
-                
-                <th className="p-3 text-right sticky top-0 z-30 bg-gray-100">Giờ nghỉ</th>
-                
-                <th className="p-3 text-right bg-green-50 font-bold text-green-700 sticky top-0 z-30">Lương dự kiến</th>
-                <th className="p-3 text-left min-w-[150px] sticky top-0 z-30 bg-gray-100">Ghi chú</th>
-                <th className="p-3 text-center sticky top-0 z-30 bg-gray-100">Trạng thái</th>
-                
-                <th className="p-3 text-center sticky right-0 top-0 bg-gray-100 z-50 border-l min-w-[100px]">Duyệt</th>
-                <th className="p-3 text-center sticky right-0 top-0 bg-gray-100 z-50 border-l">Sửa</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredData.map((row) => {
-                const { rowClass, stickyBg, isRejected } = getRowStyleInfo(row);
-                
-                return (
-                  <tr key={row.id} className={`transition-colors ${rowClass}`}>
-                    
-                    <td className={`p-3 sticky left-0 z-20 border-r font-medium ${stickyBg}`}>
-                      {row.date}
-                    </td>
-                    
-                    <td className={`p-3 sticky left-[100px] z-20 border-r font-medium ${stickyBg}`}>
-                      {row.employeeName}
-                    </td>
-                    
-                    <td className="p-3">{row.department}</td>
-                    
-                    <td className="p-3">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isRejected ? 'bg-gray-200 text-gray-500' : getRoleBadgeStyle(row.role)}`}>
-                        {row.role}
-                      </span>
-                    </td>
-                    
-                    <td className="p-3 text-right">{formatCurrency(row.hourlyRate)}</td>
-                    <td className="p-3 text-center">
-                      <div>{row.shiftStart} - {row.shiftEnd}</div>
-                      <div className="text-[12px] opacity-90">({formatDecimal(row.scheduledHours)}h)</div>
-                    </td>
-                    <td className={`p-3 text-center ${row.checkIn && !isRejected ? 'bg-blue-50/30' : ''}`}>
-                      {row.checkIn ? (
-                        <span className={!isRejected ? 'font-semibold text-blue-700' : ''}>
-                          {row.checkIn} - {row.checkOut || '--:--'}
-                          <div>
+      {/* DATA TABLE CONTAINER - CO GIÃN & SCROLL RIÊNG */}
+      <div className="flex-1 flex flex-col min-h-0 px-4 pb-4">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 flex flex-col min-h-0 overflow-hidden"> 
+          <div className="flex-1 overflow-auto"> 
+            <table className="w-full whitespace-nowrap">
+              <thead className="bg-gray-100 text-gray-600 font-semibold text-xs uppercase tracking-wider sticky top-0 z-30 shadow-sm">
+                <tr>
+                  <th className="p-3 text-left border-r sticky left-0 top-0 z-50 bg-gray-100 w-[100px] min-w-[100px]">Thời gian</th>
+                  <th className="p-3 text-left border-r sticky left-[100px] top-0 z-50 bg-gray-100 min-w-[150px]">Tên nhân viên</th>
+                  
+                  <th className="p-3 text-left sticky top-0 z-30 bg-gray-100">Bộ phận</th>
+                  <th className="p-3 text-left sticky top-0 z-30 bg-gray-100">Vai trò</th>
+                  <th className="p-3 text-right sticky top-0 z-30 bg-gray-100">Lương/h</th>
+                  <th className="p-3 text-center sticky top-0 z-30 bg-gray-100">Ca làm việc</th>
+                  <th className="p-3 text-center bg-blue-50 sticky top-0 z-30">Thực tế</th>
+                  <th className="p-3 text-right text-red-600 sticky top-0 z-30 bg-gray-100">Thiếu</th>
+                  <th className="p-3 text-right sticky top-0 z-30 bg-gray-100">Giờ công</th>
+                  <th className="p-3 text-right text-purple-600 sticky top-0 z-30 bg-gray-100">Giờ OT</th>
+                  
+                  <th className="p-3 text-right sticky top-0 z-30 bg-gray-100">Giờ nghỉ</th>
+                  
+                  <th className="p-3 text-right bg-green-50 font-bold text-green-700 sticky top-0 z-30">Lương dự kiến</th>
+                  <th className="p-3 text-left min-w-[150px] sticky top-0 z-30 bg-gray-100">Ghi chú</th>
+                  <th className="p-3 text-center sticky top-0 z-30 bg-gray-100">Trạng thái</th>
+                  
+                  <th className="p-3 text-center sticky right-0 top-0 bg-gray-100 z-50 border-l min-w-[100px]">Duyệt</th>
+                  <th className="p-3 text-center sticky right-0 top-0 bg-gray-100 z-50 border-l">Sửa</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredData.map((row) => {
+                  const { rowClass, stickyBg, isRejected } = getRowStyleInfo(row);
+                  
+                  return (
+                    <tr key={row.id} className={`transition-colors ${rowClass}`}>
+                      
+                      <td className={`p-3 sticky left-0 z-20 border-r font-medium ${stickyBg}`}>
+                        {row.date}
+                      </td>
+                      
+                      <td className={`p-3 sticky left-[100px] z-20 border-r font-medium ${stickyBg}`}>
+                        {row.employeeName}
+                        {row.isSeasonal && <span className="ml-1 text-[10px] text-purple-600 bg-purple-100 px-1 rounded border border-purple-200">TV</span>}
+                      </td>
+                      
+                      <td className="p-3">{row.department}</td>
+                      
+                      <td className="p-3">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${isRejected ? 'bg-gray-200 text-gray-500' : getRoleBadgeStyle(row.role)}`}>
+                          {row.role}
+                        </span>
+                      </td>
+                      
+                      <td className="p-3 text-right">{formatCurrency(row.hourlyRate)}</td>
+                      <td className="p-3 text-center">
+                        {row.isSeasonal ? (
+                          <span className="text-gray-400 text-xs italic">--</span>
+                        ) : (
+                          <>
+                            <div>{row.shiftStart} - {row.shiftEnd}</div>
+                            <div className="text-[12px] opacity-90">({formatDecimal(row.scheduledHours)}h)</div>
+                          </>
+                        )}
+                      </td>
+                      <td className={`p-3 text-center ${row.checkIn && !isRejected ? 'bg-blue-50/30' : ''}`}>
+                        {row.checkIn ? (
+                          <span className={!isRejected ? 'font-semibold text-blue-700' : ''}>
+                            {row.checkIn} - {row.checkOut || '--:--'}
+                            {!row.isSeasonal && (
+                              <div>
+                                <button 
+                                  onClick={() => setViewingImage(row.checkInImage)}
+                                  className={`${isRejected ? 'text-gray-300' : 'text-red-400 hover:text-red-600'}`}
+                                >
+                                  Xem ảnh
+                                </button>
+                              </div>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-red-500 italic text-xs font-semibold">Vắng</span>
+                        )}
+                      </td>
+
+                      {/* Cột Thiếu */}
+                      <td className="p-3 text-right">
+                        {row.isSeasonal ? (
+                          <span className="text-gray-400">-</span>
+                        ) : (
+                          row.missingMinutes > 0 ? (
+                            <span className={!isRejected ? 'text-red-600 font-bold' : ''}>
+                              {formatDecimal(row.missingMinutes / 60)}h
+                            </span>
+                          ) : (
+                            <span>-</span>
+                          )
+                        )}
+                      </td>
+
+                      <td className="p-3 text-right font-medium">{formatDecimal(row.standardHours)}h</td>
+                      
+                      {/* Cột OT */}
+                      <td className="p-3 text-right font-medium text-purple-700">
+                        {row.isSeasonal ? <span className="text-gray-400">-</span> : `${formatDecimal(row.otHours)}h`}
+                      </td>
+                      
+                      <td className="p-3 text-right text-gray-500">
+                        {row.breakStart && row.breakEnd ? (
+                          <>
+                            <div className="font-medium text-gray-700 text-xs">
+                              {row.breakStart} - {row.breakEnd}
+                            </div>
+                            <div className={`text-[11px] ${row.breakType === 'paid' ? 'text-green-600 font-semibold' : 'opacity-80'}`}>
+                               ({formatDecimal(row.breakDurationMinutes / 60)}h)
+                            </div>
+                          </>
+                        ) : (
+                           <span>{row.breakDurationMinutes > 0 ? `${formatDecimal(row.breakDurationMinutes / 60)}h` : '-'}</span>
+                        )}
+                      </td>
+                      
+                      <td className={`p-3 text-right font-bold ${isRejected ? 'text-gray-400' : 'bg-green-50/50 text-green-700'}`}>
+                        {formatCurrency(row.estimatedSalary)}
+                      </td>
+                      
+                      <td className="p-3 text-xs opacity-70 truncate max-w-[150px]" title={row.note}>
+                        {row.isAutoCheckout && <span className="text-red-500 font-bold mr-1">[Auto-Out]</span>}
+                        {row.note}
+                      </td>
+                      <td className="p-3 text-center">
+                        <StatusBadge status={row.status} />
+                      </td>
+                      
+                      <td className={`p-3 sticky right-0 z-20 border-l text-center ${stickyBg}`}>
+                        <div className="flex items-center justify-center gap-2">
                           <button 
-                          onClick={() => setViewingImage(row.checkInImage)}
-                          className={`${isRejected ? 'text-gray-300' : 'text-red-400 hover:text-red-600'}`}
-                        >
-                          Xem ảnh
-                        </button>
+                            onClick={() => handleStatusChange(row.id, 'approved')}
+                            className={`p-1 sticky right-0 rounded-full border transition-all ${
+                              row.status === 'approved' 
+                                ? 'bg-green-100 border-green-500 text-green-600 shadow-sm' 
+                                : 'bg-white border-gray-200 text-gray-300 hover:border-green-300 hover:text-green-500'
+                            }`}
+                            title="Chấp nhận"
+                            disabled={!row.checkIn}
+                          >
+                            <Check className="w-4 h-4" strokeWidth={3} />
+                          </button>
+
+                          <button 
+                            onClick={() => handleStatusChange(row.id, 'rejected')}
+                            className={`p-1 sticky right-0 rounded-full border transition-all ${
+                              row.status === 'rejected' 
+                                ? 'bg-red-100 border-red-500 text-red-600 shadow-sm' 
+                                : 'bg-white border-gray-200 text-gray-300 hover:border-red-300 hover:text-red-500'
+                            }`}
+                            title="Từ chối"
+                            disabled={!row.checkIn}
+                          >
+                            <X className="w-4 h-4" strokeWidth={3} />
+                          </button>
                         </div>
-                        </span>
-                      ) : (
-                        <span className="text-red-500 italic text-xs font-semibold">Vắng</span>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Cột Thiếu: Chỉ hiện giờ, bỏ dòng phút phụ */}
-                    <td className="p-3 text-right">
-                      {row.missingMinutes > 0 ? (
-                        <span className={!isRejected ? 'text-red-600 font-bold' : ''}>
-                          {formatDecimal(row.missingMinutes / 60)}h
-                        </span>
-                      ) : (
-                        <span>-</span>
-                      )}
-                    </td>
-
-                    <td className="p-3 text-right font-medium">{formatDecimal(row.standardHours)}h</td>
-                    <td className="p-3 text-right font-medium text-purple-700">{formatDecimal(row.otHours)}h</td>
-                    
-                    <td className="p-3 text-right text-gray-500">
-                      {row.breakStart && row.breakEnd ? (
-                        <>
-                          <div className="font-medium text-gray-700 text-xs">
-                            {row.breakStart} - {row.breakEnd}
-                          </div>
-                          <div className={`text-[11px] ${row.breakType === 'paid' ? 'text-green-600 font-semibold' : 'opacity-80'}`}>
-                             ({formatDecimal(row.breakDurationMinutes / 60)}h {row.breakType === 'paid' ? 'Có lương' : ''})
-                          </div>
-                        </>
-                      ) : (
-                         <span>{row.breakDurationMinutes > 0 ? `${formatDecimal(row.breakDurationMinutes / 60)}h` : '-'}</span>
-                      )}
-                    </td>
-                    
-                    <td className={`p-3 text-right font-bold ${isRejected ? 'text-gray-400' : 'bg-green-50/50 text-green-700'}`}>
-                      {formatCurrency(row.estimatedSalary)}
-                    </td>
-                    
-                    <td className="p-3 text-xs opacity-70 truncate max-w-[150px]" title={row.note}>
-                      {row.isAutoCheckout && <span className="text-red-500 font-bold mr-1">[Auto-Out]</span>}
-                      {row.note}
-                    </td>
-                    <td className="p-3 text-center">
-                      <StatusBadge status={row.status} />
-                    </td>
-                    
-                    <td className={`p-3 sticky right-0 z-20 border-l text-center ${stickyBg}`}>
-                      <div className="flex items-center justify-center gap-2">
+                      <td className={`p-3 sticky right-0 z-20 border-l text-center w-[50px] ${stickyBg}`}>
                         <button 
-                          onClick={() => handleStatusChange(row.id, 'approved')}
-                          className={`p-1 sticky right-0 rounded-full border transition-all ${
-                            row.status === 'approved' 
-                              ? 'bg-green-100 border-green-500 text-green-600 shadow-sm' 
-                              : 'bg-white border-gray-200 text-gray-300 hover:border-green-300 hover:text-green-500'
-                          }`}
-                          title="Chấp nhận"
-                          disabled={!row.checkIn}
-                        >
-                          <Check className="w-4 h-4" strokeWidth={3} />
-                        </button>
-
-                        <button 
-                          onClick={() => handleStatusChange(row.id, 'rejected')}
-                          className={`p-1 sticky right-0 rounded-full border transition-all ${
-                            row.status === 'rejected' 
-                              ? 'bg-red-100 border-red-500 text-red-600 shadow-sm' 
-                              : 'bg-white border-gray-200 text-gray-300 hover:border-red-300 hover:text-red-500'
-                          }`}
-                          title="Từ chối"
-                          disabled={!row.checkIn}
-                        >
-                          <X className="w-4 h-4" strokeWidth={3} />
-                        </button>
-                      </div>
-                    </td>
-
-                    <td className={`p-3 sticky right-0 z-20 border-l text-center w-[50px] ${stickyBg}`}>
-                      <button 
-                          onClick={() => setEditingItem(row)}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded" 
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                            onClick={() => setEditingItem(row)}
+                            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded" 
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                
+                {filteredData.length === 0 && (
+                  <tr>
+                    <td colSpan="17" className="p-8 text-center text-gray-500">
+                      Không tìm thấy dữ liệu
                     </td>
                   </tr>
-                );
-              })}
-              
-              {filteredData.length === 0 && (
-                <tr>
-                  <td colSpan="17" className="p-8 text-center text-gray-500">
-                    Không tìm thấy dữ liệu
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* MODALS */}
+      {/* MODAL EDITING */}
       {editingItem && (
         <EditModal 
           item={editingItem} 
           onClose={() => setEditingItem(null)} 
           onSave={handleSaveEdit} 
+        />
+      )}
+
+      {/* MODAL SEASONAL WORKER */}
+      {isSeasonalModalOpen && (
+        <SeasonalWorkerModal 
+          onClose={() => setIsSeasonalModalOpen(false)}
+          onSave={handleSaveSeasonal}
         />
       )}
 
@@ -652,7 +788,8 @@ const WebAttendance = () => {
   );
 };
 
-// ... Các Component phụ (StatCard, FilterSelect, StatusBadge) giữ nguyên ...
+// ... Các Component phụ giữ nguyên (FilterSelect, StatusBadge, TimeSelect24h, EditModal) ...
+
 const StatCard = ({ title, value, color, icon, desc }) => (
   <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex items-start justify-between">
     <div>
@@ -666,7 +803,7 @@ const StatCard = ({ title, value, color, icon, desc }) => (
   </div>
 );
 
-const FilterSelect = ({ label, options, value, onChange }) => (
+const FilterSelect = ({ label, options, value, onChange, isObj }) => (
   <div className="flex flex-col gap-1 min-w-[120px]">
     <label className="text-xs font-semibold text-gray-500 mb-1">{label}</label>
     <select 
@@ -674,9 +811,11 @@ const FilterSelect = ({ label, options, value, onChange }) => (
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
-      {options.map(opt => (
-        <option key={opt} value={opt}>{opt}</option>
-      ))}
+      {options.map(opt => {
+        const val = isObj ? opt.val : opt;
+        const txt = isObj ? opt.txt : opt;
+        return <option key={val} value={val}>{txt}</option>
+      })}
     </select>
   </div>
 );
@@ -705,11 +844,9 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-// Component chọn giờ tùy chỉnh (24h)
 const TimeSelect24h = ({ value, onChange, name }) => {
   const [hStr, mStr] = (value || '00:00').split(':');
   
-  // Tạo mảng 00-23 và 00-59
   const hours = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0'));
   const minutes = Array.from({length: 60}, (_, i) => i.toString().padStart(2, '0'));
 
@@ -770,25 +907,37 @@ const EditModal = ({ item, onClose, onSave }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
         <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-          <h3 className="text-lg font-bold text-gray-900">Chỉnh sửa chấm công</h3>
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <Edit className="w-5 h-5 text-blue-600" />
+            Chỉnh sửa chấm công
+          </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 overflow-y-auto flex-1">
-          <div className="bg-blue-50 p-4 rounded-md mb-6 grid grid-cols-2 gap-4">
+          <div className="bg-blue-50 p-4 rounded-md mb-6 grid grid-cols-2 gap-4 border border-blue-100">
              <div>
-              <label className="text-xs text-gray-500 uppercase">Ngày</label>
-              <div className="font-bold text-gray-900">{item.date}</div>
+              <label className="text-xs text-gray-500 uppercase font-semibold">Ngày</label>
+              <div className="font-medium text-gray-900">{item.date}</div>
             </div>
              <div>
-              <label className="text-xs text-gray-500 uppercase">Nhân viên</label>
-              <div className="font-bold text-gray-900">{item.employeeName}</div>
+              <label className="text-xs text-gray-500 uppercase font-semibold">Cơ sở</label>
+              <div className="font-medium text-gray-900 flex items-center gap-2">
+                {item.location}
+              </div>
             </div>
-             <div className="col-span-2">
-              <label className="text-xs text-gray-500 uppercase">Ca làm việc</label>
-              <div className="font-medium text-gray-900">{item.shiftStart} - {item.shiftEnd}</div>
+
+            <div>
+              <label className="text-xs text-gray-500 uppercase font-semibold">Nhân viên</label>
+              <div className="font-medium text-gray-900">{item.employeeName}</div>
+            </div>
+             <div>
+              <label className="text-xs text-gray-500 uppercase font-semibold">Ca làm việc</label>
+              <div className="font-medium text-gray-900 flex items-center gap-2">
+                {item.isSeasonal ? 'Thời vụ' : `${item.shiftStart} - ${item.shiftEnd}`}
+              </div>
             </div>
           </div>
 
@@ -835,7 +984,7 @@ const EditModal = ({ item, onClose, onSave }) => {
                     name="breakType"
                     value={formData.breakType}
                     onChange={handleChange}
-                    className="w-full border rounded px-2 py-2 text-sm bg-white h-[38px]"
+                    className="w-full border rounded px-2 py-2 text-sm bg-white h-[38px] focus:ring-2 focus:ring-blue-500 outline-none"
                   >
                     <option value="unpaid">Không lương</option>
                     <option value="paid">Có lương</option>
@@ -851,7 +1000,7 @@ const EditModal = ({ item, onClose, onSave }) => {
                 rows="2"
                 value={formData.note || ''}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="Lý do chỉnh sửa..."
               />
             </div>
@@ -859,12 +1008,167 @@ const EditModal = ({ item, onClose, onSave }) => {
         </div>
 
         <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100">
+          <button onClick={onClose} className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 font-medium">
             Hủy
           </button>
-          <button onClick={() => onSave(formData)} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 shadow-sm">
-            Lưu
+          <button onClick={() => onSave(formData)} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 shadow-sm font-medium">
+            Lưu Thay Đổi
           </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SeasonalWorkerModal = ({ onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    date: new Date().toISOString().split('T')[0],
+    employeeName: '',
+    department: 'Khác',
+    role: 'Phụ bếp', // Mặc định role
+    hourlyRate: 25000,
+    checkIn: '08:00',
+    checkOut: '17:00',
+    breakStart: '12:00',
+    breakEnd: '13:00',
+    breakType: 'unpaid',
+    note: '',
+    location: 'Cơ sở 1'
+  });
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? Number(value) : value
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md flex flex-col animate-in fade-in zoom-in-95 duration-200">
+        <div className="px-6 py-4 border-b flex justify-between items-center bg-purple-50">
+          <h3 className="text-lg font-bold text-purple-900 flex items-center gap-2">
+            Công nhân viên thời vụ
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+          {/* Thông tin chung */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Ngày làm việc</label>
+               <input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none" />
+            </div>
+            <div>
+               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Cơ sở</label>
+               <select name="location" value={formData.location} onChange={handleChange} className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white">
+                 <option>Cơ sở 1</option>
+                 <option>Cơ sở 2</option>
+               </select>
+            </div>
+          </div>
+
+          {/* Nhân viên */}
+          <div>
+             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Tên nhân viên thời vụ</label>
+             <div className="relative">
+                <input type="text" name="employeeName" value={formData.employeeName} onChange={handleChange} placeholder="VD: Nguyễn Văn A" className="w-full justify-start border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none" autoFocus />
+             </div>
+          </div>
+
+          {/* Bộ phận & Vai trò & Lương */}
+          <div className="grid grid-cols-2 gap-4">
+             <div>
+               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Bộ phận</label>
+               <select name="department" value={formData.department} onChange={handleChange} className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white">
+                 <option value="Bếp">Bếp</option>
+                 <option value="Bar">Bar</option>
+                 <option value="Phục vụ">Phục vụ</option>
+                 <option value="Kho">Kho</option>
+                 <option value="Bảo vệ">Bảo vệ</option>
+                 <option value="Khác">Khác</option>
+               </select>
+            </div>
+             <div>
+               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Vai trò</label>
+               {/* ĐÃ CHUYỂN THÀNH DROPDOWN */}
+               <select name="role" value={formData.role} onChange={handleChange} className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none bg-white">
+                  <option value="Rửa bát">Rửa bát</option>
+                  <option value="Phụ bếp">Phụ bếp</option>
+                  <option value="Phục vụ">Phục vụ</option>
+                  <option value="Pha chế">Pha chế</option>
+                  <option value="Tạp vụ">Tạp vụ</option>
+                  <option value="Bảo vệ">Bảo vệ</option>
+                  <option value="Khác">Khác</option>
+               </select>
+            </div>
+            <div className="col-span-2">
+               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Lương</label>
+               {/* ĐÃ LÀM ĐẸP Ô NHẬP LƯƠNG */}
+               <div className="relative">
+                 <input 
+                    type="number" 
+                    name="hourlyRate" 
+                    value={formData.hourlyRate} 
+                    onChange={handleChange} 
+                    className="w-full border rounded justify-start px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none font-bold text-purple-700" 
+                 />
+                 <span className="absolute right-3 top-2 text-xs font-semibold text-gray-400">VNĐ / GIỜ</span>
+               </div>
+            </div>
+          </div>
+
+          {/* Giờ giấc */}
+          <div className="border-t pt-4">
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Giờ Vào</label>
+                <TimeSelect24h name="checkIn" value={formData.checkIn} onChange={handleChange} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">Giờ Ra</label>
+                <TimeSelect24h name="checkOut" value={formData.checkOut} onChange={handleChange} />
+              </div>
+            </div>
+             <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Giờ nghỉ</label>
+             <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-[12px] text-gray-600 mb-1">Từ</label>
+                <TimeSelect24h name="breakStart" value={formData.breakStart} onChange={handleChange} />
+              </div>
+              <div>
+                <label className="block text-[12px] text-gray-600 mb-1">Đến</label>
+                <TimeSelect24h name="breakEnd" value={formData.breakEnd} onChange={handleChange} />
+              </div>
+              <div>
+                <label className="block text-[12px] text-gray-600 mb-1">Loại nghỉ</label>
+                <select 
+                    name="breakType"
+                    value={formData.breakType}
+                    onChange={handleChange}
+                    className="w-full border rounded px-1 py-2 text-sm bg-white h-[38px] focus:ring-2 focus:ring-purple-500 outline-none"
+                  >
+                    <option value="unpaid">Không lương</option>
+                    <option value="paid">Có lương</option>
+                  </select>
+              </div>
+            </div>
+          </div>
+
+          <div>
+             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Ghi chú công việc</label>
+             <textarea name="note" value={formData.note} onChange={handleChange} rows="2" className="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 outline-none" placeholder="VD: Rửa chén tiệc cưới..." />
+          </div>
+
+        </div>
+
+        <div className="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-100 font-medium">Hủy</button>
+          <button onClick={() => onSave(formData)} className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 shadow-sm font-medium">Lưu Chấm công</button>
         </div>
       </div>
     </div>

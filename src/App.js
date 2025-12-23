@@ -8,7 +8,7 @@ import WebAvailability from './components/WebAvailability';
 import WebAttendance from './components/WebAttendance';
 
 // Import Icons - Added ClipboardList here
-import { Calendar, DollarSign, Settings, Smartphone, Menu, Clock, ClipboardList } from 'lucide-react';
+import { Calendar, DollarSign, Settings, Smartphone, Menu, Clock, ClipboardList, User2 } from 'lucide-react';
 
 function App() {
   const [view, setView] = useState('IPhone');
@@ -20,7 +20,7 @@ function App() {
     { id: 'schedule', label: 'Quản lý Lịch', icon: <Calendar size={20} /> },
     { id: 'availability', label: 'Duyệt lịch rảnh', icon: <Clock size={20} /> },
     { id: 'attendance', label: 'Chấm công', icon: <ClipboardList size={20} /> },
-    { id: 'salary', label: 'Nhân viên', icon: <DollarSign size={20} /> },
+    { id: 'salary', label: 'Nhân viên', icon: <User2 size={20} /> },
     { id: 'settings', label: 'Cài đặt hệ thống', icon: <Settings size={20} /> },
   ];
 
