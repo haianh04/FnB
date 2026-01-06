@@ -115,15 +115,13 @@ const AvailabilityTag = ({ type, note, timeRange }) => {
       <div className={`w-0 h-0 border-l-[4px] border-l-transparent border-b-[4px] border-b-transparent border-t-[4px] border-r-[4px] ${colorClass} rounded-bl-[2px] shadow-sm`}></div>
 
       {/* Tooltip */}
-      {(note || timeRange) && (
-        <div className="absolute top-full right-0 mt-1 min-w-[150px] bg-white border border-gray-100 p-2 rounded-lg shadow-xl opacity-0 group-hover/tag:opacity-100 transition-opacity pointer-events-none z-50">
-          <p className={`text-[8px] font-bold uppercase mb-1 ${warningClass.split(' ')[0]}`}>
-            {type === 'free' ? 'Rảnh cả ngày' : (type === 'busy_all' ? 'Bận cả ngày' : 'Bận theo giờ')}
-          </p>
-          {timeRange && <p className="text-[8px] font-mono text-gray-500 mb-0.5">{timeRange}</p>}
-          {note && <p className="text-[8px] text-gray-700 italic">"{note}"</p>}
-        </div>
-      )}
+      <div className="absolute top-full right-0 mt-1 min-w-[150px] bg-white border border-gray-100 p-2 rounded-lg shadow-xl opacity-0 group-hover/tag:opacity-100 transition-opacity pointer-events-none z-50">
+        <p className={`text-[8px] font-bold uppercase mb-1 ${warningClass.split(' ')[0]}`}>
+          {type === 'free' ? 'Rảnh cả ngày' : (type === 'busy_all' ? 'Bận cả ngày' : 'Bận theo giờ')}
+        </p>
+        {timeRange && <p className="text-[8px] font-mono text-gray-500 mb-0.5">{timeRange}</p>}
+        {note && <p className="text-[8px] text-gray-700 italic">"{note}"</p>}
+      </div>
     </div>
   );
 };
@@ -229,16 +227,16 @@ const ShiftPoolAPI = {
     return {
       data: {
         results: [
-          { id: 26, name: "Hải Anh", meta: { department: null, birthday: null }, roles: [] },
-          { id: 23, name: "Việt Hoàng", meta: { department: "Bếp ", birthday: "2000-12-17" }, roles: [{ name: "Phục vụ" }] }, // Mock Birthday 17/12
-          { id: 22, name: "Mai", meta: { department: "Bàn", birthday: null }, roles: [{ name: "Phục vụ" }] },
-          { id: 21, name: "Cường", meta: { department: "Bếp", birthday: null }, roles: [{ name: "Phụ bếp" }] },
-          { id: 20, name: "Quỳnh Châu", meta: { department: "Bàn", birthday: null }, roles: [{ name: "Phục vụ" }] },
-          { id: 18, name: "Lê My", meta: { department: null, birthday: null }, roles: [{ name: "Đầu bếp" }] },
-          { id: 17, name: "Thế Anh 22", meta: { department: null, birthday: null }, roles: [{ name: "Phục vụ" }] },
-          { id: 16, name: "Thế Anh 21", meta: { department: null, birthday: null }, roles: [{ name: "Phụ bếp" }] },
-          { id: 14, name: "Quang Huy", meta: { department: "Kho", birthday: null }, roles: [{ name: "Phụ bếp" }] },
-          { id: 4, name: "Nguyễn Quang Huy", meta: { department: null, birthday: null }, roles: [{ name: "Phục vụ" }] }
+          { id: 26, name: "Hải Anh", meta: { department: null, birthday: null }, roles: [], email: "haianh@example.com", phone: "0901112222", joinDate: "2024-05-10" },
+          { id: 23, name: "Việt Hoàng", meta: { department: "Bếp ", birthday: "2000-12-17" }, roles: [{ name: "Phục vụ" }], email: "viethoang@example.com", phone: "0903334444", joinDate: "2024-02-15" }, // Mock Birthday 17/12
+          { id: 22, name: "Mai", meta: { department: "Bàn", birthday: null }, roles: [{ name: "Phục vụ" }], email: "mai@example.com", phone: "0905556666", joinDate: "2024-03-20" },
+          { id: 21, name: "Cường", meta: { department: "Bếp", birthday: null }, roles: [{ name: "Phụ bếp" }], email: "cuong@example.com", phone: "0907778888", joinDate: "2024-01-05" },
+          { id: 20, name: "Quỳnh Châu", meta: { department: "Bàn", birthday: null }, roles: [{ name: "Phục vụ" }], email: "chau@example.com", phone: "0909990000", joinDate: "2024-06-12" },
+          { id: 18, name: "Lê My", meta: { department: null, birthday: null }, roles: [{ name: "Đầu bếp" }], email: "lemy@example.com", phone: "0912223333", joinDate: "2023-11-01" },
+          { id: 17, name: "Thế Anh 22", meta: { department: null, birthday: null }, roles: [{ name: "Phục vụ" }], email: "theanh22@example.com", phone: "0914445555", joinDate: "2024-07-01" },
+          { id: 16, name: "Thế Anh 21", meta: { department: null, birthday: null }, roles: [{ name: "Phụ bếp" }], email: "theanh21@example.com", phone: "0916667777", joinDate: "2024-07-01" },
+          { id: 14, name: "Quang Huy", meta: { department: "Kho", birthday: null }, roles: [{ name: "Phụ bếp" }], email: "huy@example.com", phone: "0918889999", joinDate: "2024-04-15" },
+          { id: 4, name: "Nguyễn Quang Huy", meta: { department: null, birthday: null }, roles: [{ name: "Phục vụ" }], email: "nqhuy@example.com", phone: "0921112222", joinDate: "2023-12-20" }
         ]
       }
     };
@@ -370,7 +368,10 @@ export default function ScheduleGrid({ onNavigate }) {
         name: e.name,
         // Map đúng trường meta.department từ file txt
         dept: e.meta?.department ? e.meta.department.trim() : (e.roles?.[0] ? e.roles[0].wageType : 'Khác'),
-        birthday: e.meta?.birthday
+        birthday: e.meta?.birthday,
+        email: e.email,
+        phone: e.phone,
+        joinDate: e.joinDate
       }));
       setAllEmployees(mappedEmployees);
 
@@ -788,16 +789,17 @@ export default function ScheduleGrid({ onNavigate }) {
                   className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors min-h-[90px] group/row duration-300"
                 >
                   {/* EMPLOYEE INFO CELL with Tooltip & Navigation */}
-                  <div className="w-60 flex-shrink-0 p-4 flex items-center gap-3 border-r border-gray-200 bg-white relative z-10 hover:z-50">
+                  {/* EMPLOYEE INFO CELL with Tooltip & Navigation */}
+                  <div
+                    className="w-60 flex-shrink-0 p-4 flex items-center gap-3 border-r border-gray-200 bg-white relative z-10 hover:z-50 group/info cursor-pointer hover:bg-orange-50/50 transition-colors"
+                    onClick={() => onNavigate && onNavigate('salary', { employeeId: emp.id })}
+                  >
                     <div className={`w-9 h-9 rounded-full ${getAvatarColor(emp.name)} flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white`}>
                       {emp.name.split(' ').map(n => n.charAt(0)).join('').substring(0, 2).toUpperCase()}
                     </div>
                     <div className="flex flex-col min-w-0">
-                      {/* NAVIGATION LINK */}
-                      <span
-                        onClick={() => onNavigate && onNavigate('salary', { employeeId: emp.id })}
-                        className="font-semibold text-gray-700 text-sm truncate cursor-pointer hover:text-orange-600 hover:underline"
-                      >
+                      {/* CELL TEXT */}
+                      <span className="font-semibold text-gray-700 text-sm truncate group-hover/info:text-orange-600 group-hover/info:underline">
                         {emp.name}
                       </span>
                       {emp.birthday && (
@@ -808,7 +810,7 @@ export default function ScheduleGrid({ onNavigate }) {
                       )}
 
                       {/* EMPLOYEE TOOLTIP */}
-                      <div className="absolute left-1/2 bottom-full mb-2 w-64 bg-slate-800 text-white text-xs rounded-lg p-3 shadow-xl opacity-0 group-hover/row:opacity-100 transition-opacity pointer-events-none z-50 -translate-x-1/2">
+                      <div className="absolute left-1/2 bottom-full mb-2 w-64 bg-slate-800 text-white text-xs rounded-lg p-3 shadow-xl opacity-0 group-hover/info:opacity-100 transition-opacity pointer-events-none z-50 -translate-x-1/2">
                         <div className="flex items-center gap-3 mb-2 border-b border-slate-700 pb-2">
                           <div className={`w-8 h-8 rounded-full ${getAvatarColor(emp.name)} flex items-center justify-center font-bold`}>
                             {emp.name.charAt(0)}
@@ -820,7 +822,7 @@ export default function ScheduleGrid({ onNavigate }) {
                         </div>
                         <div className="space-y-1">
                           <p><span className="text-slate-400">Vai trò:</span> {emp.roles?.[0]?.name || 'N/A'}</p>
-                          <p><span className="text-slate-400">Ngày vào làm:</span> 01/01/2025</p>
+                          <p><span className="text-slate-400">Ngày vào làm:</span> {emp.joinDate || '01/01/2025'}</p>
                           <p><span className="text-slate-400">Email:</span> {emp.email || 'user@example.com'}</p>
                           <p><span className="text-slate-400">Di động:</span> {emp.phone || '0901234567'}</p>
                         </div>

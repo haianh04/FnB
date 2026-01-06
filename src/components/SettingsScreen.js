@@ -104,7 +104,7 @@ const GeneralTab = () => {
           <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
             <Building2 className="text-[#F97316]" size={20} /> Thông tin chung
           </h3>
-          <InputField label="Tên nhà hàng" value="Nhà hàng Xìn Ký" onChange={()=>{}} />
+          <InputField label="Tên nhà hàng" value="Nhà hàng ABC" onChange={()=>{}} />
         </div>
 
         {/* Quản lý Cơ sở */}

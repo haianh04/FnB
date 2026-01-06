@@ -1,15 +1,15 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { 
-  ChevronDown, 
-  Plus, 
-  Trash2, 
-  Edit2, 
-  X, 
-  Search, 
-  Eye, 
-  User, 
-  CreditCard, 
-  Shield, 
+import {
+  ChevronDown,
+  Plus,
+  Trash2,
+  Edit2,
+  X,
+  Search,
+  Eye,
+  User,
+  CreditCard,
+  Shield,
   ArrowLeft,
   ToggleLeft,
   ToggleRight,
@@ -19,8 +19,8 @@ import {
   XCircle,
   AlertCircle,
   AlertTriangle,
-  MoreVertical, 
-  RotateCcw, 
+  MoreVertical,
+  RotateCcw,
   FileEdit,
   Filter
 } from 'lucide-react';
@@ -28,28 +28,6 @@ import {
 // --- MOCK DATA (Đã đổi tên trường khớp với Database Schema) ---
 
 const mockEmployees = [
-  {
-    // Bảng: hr_employee
-    id: '1',
-    name: 'Quỳnh Châu',
-    work_email: 'cquynh585@gmail.com',     // Old: email
-    work_base: 'Cơ sở 1',                  // Old: base
-    status: 'active',
-    avatar_url: 'Q',                       // Old: avatar
-    
-    // Bảng: job_roles (Thông tin hiển thị)
-    department: 'Bếp nóng',
-    job_role_name: 'Bếp thịt',             // Old: position
-    
-    // Bảng: employee_profiles
-    birthday: '1995-05-12',                // Old: dob
-    hire_date: '2023-01-15',               // Old: startDate
-    phone: '0912345678',
-    cccd: '001234567890',
-    location: '123 Đường ABC, 1, TP.HCM',  // Old: address (Map vào location của profile)
-    emergency_contact_name: 'Nguyễn Văn A', // Old: emergencyContactName
-    emergency_contact_phone: '0987654321'   // Old: emergencyContactPhone
-  },
   {
     id: '2',
     name: 'Phạm Văn Huy',
@@ -77,25 +55,142 @@ const mockEmployees = [
     status: 'inactive',
     avatar_url: 'N',
     phone: '0934567890',
-    
+
     // Thông tin nghỉ việc (hr_employee)
     deactivation_date: '2025-11-15',      // Old: deactivationDate
     deactivation_reason: 'Nhân viên xin nghỉ việc', // Old: deactivationReason
     deactivation_note: 'Đã bàn giao công việc.'     // Old: deactivationNote
   },
+  // --- Data synced from WebSchedule ---
   {
-    id: '4',
-    name: 'Thế Anh',
-    work_email: 'theanhntp21@gmail.com',
-    birthday: '2000-11-01',
-    hire_date: '2024-01-05',
-    work_base: 'Cơ sở 1',
-    department: 'Thu ngân',
-    job_role_name: 'Thu ngân',
+    id: '26',
+    name: "Hải Anh",
+    work_email: "haianh@example.com",
+    birthday: null,
+    hire_date: "2024-05-10",
+    work_base: "Cơ sở 1",
+    department: "Khác",
+    job_role_name: "Chưa phân công",
+    status: 'active',
+    avatar_url: 'H',
+    phone: "0901112222"
+  },
+  {
+    id: '23',
+    name: "Việt Hoàng",
+    work_email: "viethoang@example.com",
+    birthday: "2000-12-17",
+    hire_date: "2024-02-15",
+    work_base: "Cơ sở 2",
+    department: "Bếp",
+    job_role_name: "Phục vụ",
+    status: 'active',
+    avatar_url: 'V',
+    phone: "0903334444"
+  },
+  {
+    id: '22',
+    name: "Mai",
+    work_email: "mai@example.com",
+    birthday: null,
+    hire_date: "2024-03-20",
+    work_base: "Cơ sở 1",
+    department: "Bàn",
+    job_role_name: "Phục vụ",
+    status: 'active',
+    avatar_url: 'M',
+    phone: "0905556666"
+  },
+  {
+    id: '21',
+    name: "Cường",
+    work_email: "cuong@example.com",
+    birthday: null,
+    hire_date: "2024-01-05",
+    work_base: "Cơ sở 2",
+    department: "Bếp",
+    job_role_name: "Phụ bếp",
+    status: 'active',
+    avatar_url: 'C',
+    phone: "0907778888"
+  },
+  {
+    id: '20',
+    name: "Quỳnh Châu",
+    work_email: "chau@example.com",
+    birthday: null,
+    hire_date: "2024-06-12",
+    work_base: "Văn phòng chính",
+    department: "Bàn",
+    job_role_name: "Phục vụ",
+    status: 'active',
+    avatar_url: 'Q',
+    phone: "0909990000"
+  },
+  {
+    id: '18',
+    name: "Lê My",
+    work_email: "lemy@example.com",
+    birthday: null,
+    hire_date: "2023-11-01",
+    work_base: "Cơ sở 1",
+    department: "Bếp",
+    job_role_name: "Đầu bếp",
+    status: 'active',
+    avatar_url: 'L',
+    phone: "0912223333"
+  },
+  {
+    id: '17',
+    name: "Thế Anh 22",
+    work_email: "theanh22@example.com",
+    birthday: null,
+    hire_date: "2024-07-01",
+    work_base: "Cơ sở 1",
+    department: "Bàn",
+    job_role_name: "Phục vụ",
     status: 'active',
     avatar_url: 'T',
-    phone: '0945678901',
-    cccd: '001234567893'
+    phone: "0914445555"
+  },
+  {
+    id: '16',
+    name: "Thế Anh 21",
+    work_email: "theanh21@example.com",
+    birthday: null,
+    hire_date: "2024-07-01",
+    work_base: "Cơ sở 1",
+    department: "Bếp",
+    job_role_name: "Phụ bếp",
+    status: 'active',
+    avatar_url: 'T',
+    phone: "0916667777"
+  },
+  {
+    id: '14',
+    name: "Quang Huy",
+    work_email: "huy@example.com",
+    birthday: null,
+    hire_date: "2024-04-15",
+    work_base: "Cơ sở 2",
+    department: "Kho",
+    job_role_name: "Phụ bếp",
+    status: 'active',
+    avatar_url: 'Q',
+    phone: "0918889999"
+  },
+  {
+    id: '4',
+    name: "Nguyễn Quang Huy",
+    work_email: "nqhuy@example.com",
+    birthday: null,
+    hire_date: "2023-12-20",
+    work_base: "Cơ sở 1",
+    department: "Bàn",
+    job_role_name: "Phục vụ",
+    status: 'active',
+    avatar_url: 'N',
+    phone: "0921112222"
   }
 ];
 
@@ -230,7 +325,7 @@ function CCCDModal({ onClose }) {
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
-        
+
         <div className="p-6 overflow-y-auto bg-gray-50 flex-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
@@ -239,29 +334,29 @@ function CCCDModal({ onClose }) {
                 <div className="absolute inset-0 flex items-center justify-center text-gray-400">
                   <span>[Ảnh mặt trước CCCD]</span>
                 </div>
-                <img 
-                  src="https://placehold.co/400x250/png" 
-                  alt="Mặt trước CCCD" 
-                  className="w-full h-full object-cover opacity-0 group-hover:opacity-10 transition-opacity" 
+                <img
+                  src="https://placehold.co/400x250/png"
+                  alt="Mặt trước CCCD"
+                  className="w-full h-full object-cover opacity-0 group-hover:opacity-10 transition-opacity"
                 />
               </div>
             </div>
-            
+
             <div className="space-y-3">
               <span className="text-sm font-medium text-gray-500 block">Mặt sau</span>
               <div className="aspect-[1.58/1] bg-gray-200 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden group">
-                 <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                <div className="absolute inset-0 flex items-center justify-center text-gray-400">
                   <span>[Ảnh mặt sau CCCD]</span>
                 </div>
-                <img 
-                  src="https://placehold.co/400x250/png" 
-                  alt="Mặt sau CCCD" 
-                  className="w-full h-full object-cover opacity-0 group-hover:opacity-10 transition-opacity" 
+                <img
+                  src="https://placehold.co/400x250/png"
+                  alt="Mặt sau CCCD"
+                  className="w-full h-full object-cover opacity-0 group-hover:opacity-10 transition-opacity"
                 />
               </div>
             </div>
           </div>
-          
+
           <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
             <h4 className="text-sm font-semibold text-blue-800 mb-2">Thông tin trích xuất</h4>
             <div className="grid grid-cols-2 gap-4 text-sm">
@@ -294,7 +389,7 @@ function SalaryHistory({ employee }) {
   const [activeRoleTab, setActiveRoleTab] = useState('cashier-monthly');
   const [year, setYear] = useState('2025');
   const [allowances, setAllowances] = useState(mockAllowancesData);
-  
+
   const [isAddingAllowance, setIsAddingAllowance] = useState(false);
   const [newAllowanceData, setNewAllowanceData] = useState({
     name: '', type: 'ngày', condition_text: '', default_amount: 0, active: true
@@ -355,7 +450,7 @@ function SalaryHistory({ employee }) {
   };
 
   const saveEdit = () => {
-    setAllowances(prev => prev.map(a => 
+    setAllowances(prev => prev.map(a =>
       a.id === editingId ? { ...editFormData, default_amount: Number(editFormData.default_amount) } : a
     ));
     setEditingId(null);
@@ -369,7 +464,7 @@ function SalaryHistory({ employee }) {
   };
 
   const toggleAllowanceStatus = (id) => {
-    setAllowances(allowances.map(a => 
+    setAllowances(allowances.map(a =>
       a.id === id ? { ...a, active: !a.active } : a
     ));
   };
@@ -384,7 +479,7 @@ function SalaryHistory({ employee }) {
             <button key={role} onClick={() => setActiveRoleTab(role)} className={`px-4 py-2 rounded-lg text-sm transition-colors ${activeRoleTab === role ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>{role}</button>
           ))}
         </div>
-        
+
         <div className="bg-gray-50 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-sm text-gray-600">Vai trò hiện tại</span>
@@ -435,10 +530,10 @@ function SalaryHistory({ employee }) {
                 if (isEditing) {
                   return (
                     <tr key={allowance.id} className="bg-blue-50 border-b border-blue-100">
-                      <td className="px-4 py-3"><input type="text" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.name} onChange={(e) => setEditFormData({...editFormData, name: e.target.value})} /></td>
-                      <td className="px-4 py-3"><select className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.type} onChange={(e) => setEditFormData({...editFormData, type: e.target.value})}><option value="ngày">ngày</option><option value="tháng">tháng</option></select></td>
-                      <td className="px-4 py-3"><input type="text" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.condition_text} onChange={(e) => setEditFormData({...editFormData, condition_text: e.target.value})} /></td>
-                      <td className="px-4 py-3"><input type="number" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.default_amount} onChange={(e) => setEditFormData({...editFormData, default_amount: e.target.value})} /></td>
+                      <td className="px-4 py-3"><input type="text" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} /></td>
+                      <td className="px-4 py-3"><select className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.type} onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}><option value="ngày">ngày</option><option value="tháng">tháng</option></select></td>
+                      <td className="px-4 py-3"><input type="text" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.condition_text} onChange={(e) => setEditFormData({ ...editFormData, condition_text: e.target.value })} /></td>
+                      <td className="px-4 py-3"><input type="number" className="w-full px-2 py-1 border border-blue-300 rounded text-sm focus:outline-none focus:border-blue-500" value={editFormData.default_amount} onChange={(e) => setEditFormData({ ...editFormData, default_amount: e.target.value })} /></td>
                       <td className="px-4 py-3"><div className="flex items-center justify-center gap-2"><button onClick={saveEdit} className="p-1 bg-green-500 text-white rounded hover:bg-green-600" title="Lưu"><Save className="w-4 h-4" /></button><button onClick={cancelEdit} className="p-1 bg-gray-400 text-white rounded hover:bg-gray-500" title="Hủy"><XCircle className="w-4 h-4" /></button></div></td>
                     </tr>
                   );
@@ -603,7 +698,7 @@ function AddEmployeeModal({ onClose, onAdd }) {
                 <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" />
               </div>
             </div>
-             <div>
+            <div>
               <label className="block text-gray-700 mb-1.5 text-sm font-medium">Ngày sinh</label>
               <input type="date" value={formData.birthday} onChange={(e) => setFormData({ ...formData, birthday: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg" />
             </div>
@@ -613,9 +708,9 @@ function AddEmployeeModal({ onClose, onAdd }) {
 
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div>
+              <div>
                 <label className="block text-gray-700 mb-1.5 text-sm font-medium">Cơ sở</label>
-                <select value={formData.work_base} onChange={(e) => setFormData({...formData, work_base: e.target.value})} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg">
+                <select value={formData.work_base} onChange={(e) => setFormData({ ...formData, work_base: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg">
                   {baseOptions.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
               </div>
@@ -626,30 +721,30 @@ function AddEmployeeModal({ onClose, onAdd }) {
                 </select>
               </div>
             </div>
-            
+
             {/* Thêm ô Ngày bắt đầu làm việc */}
             <div>
               <label className="block text-gray-700 mb-1.5 text-sm font-medium">Ngày bắt đầu làm việc</label>
               <div className="relative">
-                <input 
-                  type="date" 
-                  value={formData.hire_date} 
-                  onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })} 
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" 
+                <input
+                  type="date"
+                  value={formData.hire_date}
+                  onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
             </div>
 
-             <div>
-                <label className="block text-gray-700 mb-1.5 text-sm font-medium">Vai trò chính</label>
-                <div className="flex flex-wrap gap-2">
-                  {roleOptions.map(r => (
-                    <button key={r} onClick={() => handleRoleToggle(r)} className={`px-3 py-1 rounded text-sm border ${formData.roles.includes(r) ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 border-gray-300'}`}>
-                      {r}
-                    </button>
-                  ))}
-                </div>
+            <div>
+              <label className="block text-gray-700 mb-1.5 text-sm font-medium">Vai trò chính</label>
+              <div className="flex flex-wrap gap-2">
+                {roleOptions.map(r => (
+                  <button key={r} onClick={() => handleRoleToggle(r)} className={`px-3 py-1 rounded text-sm border ${formData.roles.includes(r) ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-700 border-gray-300'}`}>
+                    {r}
+                  </button>
+                ))}
               </div>
+            </div>
           </div>
         </div>
 
@@ -729,7 +824,7 @@ function ReactivateEmployeeModal({ employee, onClose, onConfirm }) {
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Kích hoạt lại nhân viên</h2>
         <p className="text-gray-600 mb-6">
           Bạn có chắc chắn muốn kích hoạt lại nhân viên <span className="font-bold text-gray-900">{employee.name}</span> không?
-          <br/>
+          <br />
           Trạng thái nhân viên sẽ chuyển về <span className="text-green-600 font-medium">Hoạt động</span>.
         </p>
         <div className="flex justify-end gap-3">
@@ -785,21 +880,21 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-700 mb-2 font-medium">Cơ sở làm việc</label>
-                    <select value={editedEmployee.work_base} onChange={(e) => setEditedEmployee({...editedEmployee, work_base: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <select value={editedEmployee.work_base} onChange={(e) => setEditedEmployee({ ...editedEmployee, work_base: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
                       {baseOptions.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
-                   <div>
+                  <div>
                     <label className="block text-gray-700 mb-2 font-medium">CCCD</label>
                     <div className="flex items-center gap-2">
-                       <input type="text" value={editedEmployee.cccd || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, cccd: e.target.value })} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium tracking-wide" placeholder="Số CCCD" />
+                      <input type="text" value={editedEmployee.cccd || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, cccd: e.target.value })} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium tracking-wide" placeholder="Số CCCD" />
                       <button onClick={() => setShowCCCDModal(true)} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg border border-gray-200 text-sm font-medium transition-colors flex-shrink-0">Xem ảnh</button>
                     </div>
                   </div>
                 </div>
 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
                     <label className="block text-gray-700 mb-2 font-medium">Ngày sinh</label>
                     <input type="date" value={editedEmployee.birthday || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, birthday: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
                   </div>
@@ -808,7 +903,7 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
                     <input type="date" value={editedEmployee.hire_date || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, hire_date: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">Địa chỉ</label>
                   <input type="text" value={editedEmployee.location || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, location: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
@@ -823,14 +918,14 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
                 </div>
                 <h2 className="text-gray-900 text-lg font-medium">Liên hệ khẩn cấp</h2>
               </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">Tên liên hệ</label>
-                  <input type="text" value={editedEmployee.emergency_contact_name || ''} onChange={(e) => setEditedEmployee({...editedEmployee, emergency_contact_name: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="text" value={editedEmployee.emergency_contact_name || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, emergency_contact_name: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 </div>
                 <div>
                   <label className="block text-gray-700 mb-2 font-medium">Số liên hệ</label>
-                  <input type="tel" value={editedEmployee.emergency_contact_phone || ''} onChange={(e) => setEditedEmployee({...editedEmployee, emergency_contact_phone: e.target.value})} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                  <input type="tel" value={editedEmployee.emergency_contact_phone || ''} onChange={(e) => setEditedEmployee({ ...editedEmployee, emergency_contact_phone: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 </div>
               </div>
             </div>
@@ -873,9 +968,9 @@ function EmployeeDetail({ employee, onClose, onUpdate, onAddEmployee }) {
                 <div className="min-w-0">
                   <div className="text-gray-900 font-medium truncate">{employee.name}</div>
                   <div className="text-sm text-gray-500 truncate">{employee.work_email}</div>
-                   <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
-                     <MapPin className="w-3 h-3" />
-                     {employee.work_base}
+                  <div className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    {employee.work_base}
                   </div>
                 </div>
               </div>
@@ -958,7 +1053,7 @@ function EmployeeList({
   onSearchChange,
   onSelectEmployee,
   onDeactivateEmployee,
-  onReactivateEmployee, 
+  onReactivateEmployee,
   onAddEmployee,
   filterBase,
   onFilterBaseChange,
@@ -1029,7 +1124,7 @@ function EmployeeList({
       }
     }
 
-    return true; 
+    return true;
   });
 
   return (
@@ -1044,14 +1139,14 @@ function EmployeeList({
 
       {/* --- TABS --- */}
       <div className="flex gap-4 mb-6 border-b border-gray-200">
-        <button 
-          onClick={() => setViewTab('current')} 
+        <button
+          onClick={() => setViewTab('current')}
           className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 ${viewTab === 'current' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Đang làm việc
         </button>
-        <button 
-          onClick={() => setViewTab('former')} 
+        <button
+          onClick={() => setViewTab('former')}
           className={`pb-3 px-2 text-sm font-medium transition-colors border-b-2 ${viewTab === 'former' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
           Đã nghỉ việc
@@ -1064,7 +1159,7 @@ function EmployeeList({
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input type="text" placeholder="Tìm kiếm theo tên, email, sđt..." value={searchTerm} onChange={(e) => onSearchChange(e.target.value)} className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
         </div>
-        
+
         {/* Filters for 'current' tab */}
         {viewTab === 'current' && (
           <>
@@ -1099,10 +1194,10 @@ function EmployeeList({
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>
             <div className="relative min-w-[180px]">
-              <input 
-                type="month" 
-                value={filterMonth} 
-                onChange={(e) => setFilterMonth(e.target.value)} 
+              <input
+                type="month"
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
               />
             </div>
@@ -1129,8 +1224,8 @@ function EmployeeList({
                   <span className="truncate">{employee.work_email}</span>
                 </div>
                 <div className="flex items-center gap-1 text-gray-500 text-sm mb-1 truncate">
-                   <MapPin className="w-3.5 h-3.5" />
-                   <span className="truncate">{employee.work_base}</span>
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span className="truncate">{employee.work_base}</span>
                 </div>
                 {(employee.department || employee.job_role_name) && (
                   <div className="flex items-center gap-1 text-gray-500 text-sm truncate">
@@ -1155,11 +1250,11 @@ function EmployeeList({
                 <button onClick={(e) => handleToggleMenu(e, employee.id)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600">
                   <MoreVertical className="w-5 h-5" />
                 </button>
-                
+
                 {activeMenuEmployeeId === employee.id && (
                   <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
                     <button onClick={(e) => { e.stopPropagation(); onSelectEmployee(employee); setActiveMenuEmployeeId(null); }} className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"><Eye className="w-4 h-4" /> Xem chi tiết</button>
-                    
+
                     {/* Logic menu items based on status */}
                     {viewTab === 'current' && (
                       employee.deactivation_date && new Date(employee.deactivation_date) > new Date() ? (
@@ -1199,7 +1294,7 @@ function EmployeeList({
 }
 
 // 8. MAIN APP COMPONENT
-export default function App() {
+export default function App({ initialSelectedId }) {
   const [employees, setEmployees] = useState(mockEmployees);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1208,7 +1303,17 @@ export default function App() {
 
   const uniqueBases = useMemo(() => Array.from(new Set(employees.map(e => e.work_base))).filter(Boolean).sort(), [employees]);
   const uniquePositions = useMemo(() => Array.from(new Set(employees.map(e => e.job_role_name))).filter(Boolean).sort(), [employees]);
-  
+
+  // Effect to handle deep linking from other screens (e.g., Schedule)
+  useEffect(() => {
+    if (initialSelectedId) {
+      const targetEmp = employees.find(e => String(e.id) === String(initialSelectedId));
+      if (targetEmp) {
+        setSelectedEmployee(targetEmp);
+      }
+    }
+  }, [initialSelectedId]); // Run when prop changes (or on mount)
+
   const handleSelectEmployee = (employee) => setSelectedEmployee(employee);
   const handleCloseDetail = () => setSelectedEmployee(null);
   const handleUpdateEmployee = (updatedEmployee) => {
@@ -1225,10 +1330,10 @@ export default function App() {
   };
 
   const handleReactivateEmployee = (id) => {
-      setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: 'active', deactivation_date: undefined, deactivation_reason: undefined, deactivation_note: undefined } : emp));
-      if (selectedEmployee?.id === id) {
-        setSelectedEmployee(prev => prev ? { ...prev, status: 'active', deactivation_date: undefined, deactivation_reason: undefined, deactivation_note: undefined } : null);
-      }
+    setEmployees(prev => prev.map(emp => emp.id === id ? { ...emp, status: 'active', deactivation_date: undefined, deactivation_reason: undefined, deactivation_note: undefined } : emp));
+    if (selectedEmployee?.id === id) {
+      setSelectedEmployee(prev => prev ? { ...prev, status: 'active', deactivation_date: undefined, deactivation_reason: undefined, deactivation_note: undefined } : null);
+    }
   };
 
   const handleAddEmployee = (data) => {

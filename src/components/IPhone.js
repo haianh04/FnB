@@ -16,6 +16,7 @@ import SalaryScreen from "./screens/SalaryScreen";
 import ChangePasswordScreen from "./screens/ChangePasswordScreen";
 import AttendanceHistoryScreen from "./screens/AttendanceHistoryScreen";
 import AvailabilityScreen from "./screens/AvailabilityScreen";
+import LeaveHistoryScreen from './screens/LeaveHistoryScreen';
 
 // 3. IMPORT COMMON
 import StatusBar from "./common/StatusBar";
@@ -141,6 +142,7 @@ export default function IPhone() {
          {currentTab === 'availability' && <AvailabilityScreen onBack={() => handleNavigate('more')} />}
          {currentTab === 'salary' && <SalaryScreen onBack={() => handleNavigate('more')} />}
          {currentTab === 'change-password' && <ChangePasswordScreen user={CURRENT_USER} onBack={() => handleNavigate('more')} />}
+         {currentTab === 'leave-history' && <LeaveHistoryScreen onBack={handleBack} />}
 
       </div>
       
