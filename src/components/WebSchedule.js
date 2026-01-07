@@ -119,7 +119,7 @@ const AvailabilityTag = ({ type, note, timeRange }) => {
         <p className={`text-[8px] font-bold uppercase mb-1 ${warningClass.split(' ')[0]}`}>
           {type === 'free' ? 'Rảnh cả ngày' : (type === 'busy_all' ? 'Bận cả ngày' : 'Bận theo giờ')}
         </p>
-        {timeRange && <p className="text-[8px] font-mono text-gray-500 mb-0.5">{timeRange}</p>}
+        {timeRange && <p className="text-[8px] font-mono text-gray-700 mb-0.5">{timeRange}</p>}
         {note && <p className="text-[8px] text-gray-700 italic">"{note}"</p>}
       </div>
     </div>

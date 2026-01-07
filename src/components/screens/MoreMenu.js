@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Briefcase, DollarSign, History, CalendarPlus, 
-  Bell, ChevronRight, UserCircle, LogOut, Lock, FileClock 
+  Bell, ChevronRight, UserCircle, LogOut, Lock, FilePlus
 } from 'lucide-react';
 
 // --- HELPER (Nhúng trực tiếp để tránh lỗi import) ---
@@ -35,7 +35,7 @@ export default function MoreMenu({ onNavigate, onLogout, user }) {
     { 
         id: 'leave-history', 
         label: 'Lịch sử nghỉ phép', 
-        icon: <FileClock size={20} className="text-pink-500" />,  
+        icon: <FilePlus size={20} className="text-pink-500" />,  
     },
     // ------------------------
     { 
