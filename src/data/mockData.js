@@ -2,6 +2,7 @@
 
 export const CURRENT_USER = {
   id: "NV-00128",
+  department: "F.O.H",
   roles: ["Phục vụ", "Pha chế"], // User KHÔNG có vai trò Thu ngân/Bếp
   fullName: "Hoàng Đức Tùng",
   email: "tung.hoang@xinkfnb.com",
@@ -44,18 +45,18 @@ export const INITIAL_MY_SHIFTS = [
       { id: 104, time: "14:00 – 22:00", location: "CHÚ BI", role: "PHỤC VỤ", transferFrom: "Lê Văn Hùng" } // Đã nhận từ người khác
     ]
   },
-{
+  {
     // CẤU HÌNH NGÀY HÔM NAY ĐỂ TEST
     date: "19", day: "T3",
     shifts: [
-      { 
-        id: 999, 
+      {
+        id: 999,
         // HÃY SỬA GIỜ Ở DÒNG DƯỚI ĐỂ TEST:
         // Nếu bây giờ là 18:15, để 19:00 sẽ bị KHÓA. Để 18:20 sẽ MỞ.
-        time: "19:00 – 23:00", 
-        location: "CHÚ BI", 
-        role: "PHA CHẾ", 
-        transferFrom: null 
+        time: "19:00 – 23:00",
+        location: "CHÚ BI",
+        role: "PHA CHẾ",
+        transferFrom: null
       }
     ]
   },
@@ -65,11 +66,11 @@ export const INITIAL_MY_SHIFTS = [
 // Bao gồm các case: Hợp lệ, Trùng giờ, Sai vai trò
 export const INITIAL_MARKET_SHIFTS = [
   // CASE 1: HỢP LỆ (Nhận được)
-  { 
-    id: 'm1', role: "Phục vụ", date: "26/11", day: "T4", time: "18:00 - 22:00", 
+  {
+    id: 'm1', role: "Phục vụ", date: "26/11", day: "T4", time: "18:00 - 22:00",
     owner: "Trần Thị B", location: "CHÚ BI", reason: "Bận học đột xuất"
   },
-  
+
   // CASE 2: TRÙNG GIỜ (Ngày 27 T5 user đã có ca 18:00 - 22:00)
   // Ca này 19:00 - 23:00 -> Bị trùng đoạn 19:00-22:00
   {
@@ -85,7 +86,7 @@ export const INITIAL_MARKET_SHIFTS = [
 
   // CASE 4: HỢP LỆ (Ngày trống)
   {
-    id: 'm4', role: "Phục vụ", date: "28/11", day: "T6", time: "08:00 - 16:00", 
+    id: 'm4', role: "Phục vụ", date: "28/11", day: "T6", time: "08:00 - 16:00",
     owner: "Phạm D", location: "CHÚ BI", reason: "Đổi ca"
   },
 
